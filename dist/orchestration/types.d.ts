@@ -1,0 +1,138 @@
+/**
+ * Shared types for the orchestration module.
+ *
+ * These types are used across the concurrency pool, progress reporter,
+ * and command runner to represent task results, run summaries, progress
+ * events, and command options.
+ *
+ * @module
+ */
+import type { InconsistencyReport } from '../quality/index.js';
+import type { ProgressLog } from './progress.js';
+import type { ITraceWriter } from './trace.js';
+/**
+ * Result of processing a single file through AI analysis.
+ *
+ * Produced by the command runner for each file task, carrying token
+ * counts and timing data needed for the run summary.
+ */
+export interface FileTaskResult {
+    /** Relative path to the source file */
+    path: string;
+    /** Whether the AI call succeeded */
+    success: boolean;
+    /** Number of input tokens consumed (non-cached) */
+    tokensIn: number;
+    /** Number of output tokens generated */
+    tokensOut: number;
+    /** Number of cache read input tokens */
+    cacheReadTokens: number;
+    /** Number of cache creation input tokens */
+    cacheCreationTokens: number;
+    /** Wall-clock duration in milliseconds */
+    durationMs: number;
+    /** Model identifier used for this call */
+    model: string;
+    /** Error message if the call failed */
+    error?: string;
+}
+/**
+ * Aggregated summary of a command run.
+ *
+ * Produced at the end of a generate or update command execution,
+ * combining per-file results into totals for display and telemetry.
+ */
+export interface RunSummary {
+    /** agents-reverse-engineer version that produced this run */
+    version: string;
+    /** Number of files that were successfully processed */
+    filesProcessed: number;
+    /** Number of files that failed processing */
+    filesFailed: number;
+    /** Number of files that were skipped (e.g., dry-run) */
+    filesSkipped: number;
+    /** Total number of AI calls made */
+    totalCalls: number;
+    /** Sum of input tokens across all calls */
+    totalInputTokens: number;
+    /** Sum of output tokens across all calls */
+    totalOutputTokens: number;
+    /** Sum of cache read tokens across all calls */
+    totalCacheReadTokens: number;
+    /** Sum of cache creation tokens across all calls */
+    totalCacheCreationTokens: number;
+    /** Total wall-clock duration in milliseconds */
+    totalDurationMs: number;
+    /** Number of errors encountered */
+    errorCount: number;
+    /** Number of retries that occurred */
+    retryCount: number;
+    /** Total file reads across all calls */
+    totalFilesRead: number;
+    /** Unique files read (deduped by path) */
+    uniqueFilesRead: number;
+    /** Number of code-vs-doc inconsistencies detected */
+    inconsistenciesCodeVsDoc?: number;
+    /** Number of code-vs-code inconsistencies detected */
+    inconsistenciesCodeVsCode?: number;
+    /** Number of directories that were successfully processed */
+    dirsProcessed?: number;
+    /** Number of directories that failed processing */
+    dirsFailed?: number;
+    /** Number of directories that were skipped (unchanged) */
+    dirsSkipped?: number;
+    /** Number of phantom path references detected in AGENTS.md files */
+    phantomPaths?: number;
+    /** Full inconsistency report (undefined if no checks ran) */
+    inconsistencyReport?: InconsistencyReport;
+}
+/**
+ * Event emitted by the command runner to the progress reporter.
+ *
+ * Each event type carries different optional fields:
+ * - `start`: filePath, index, total
+ * - `done`: filePath, index, total, durationMs, tokensIn, tokensOut, model
+ * - `error`: filePath, index, total, error
+ * - `dir-done`: filePath (directory path)
+ */
+export interface ProgressEvent {
+    /** Event type */
+    type: 'start' | 'done' | 'error' | 'dir-done';
+    /** File or directory path */
+    filePath: string;
+    /** Zero-based index of this task in the current phase */
+    index: number;
+    /** Total number of tasks in the current phase */
+    total: number;
+    /** Wall-clock duration in milliseconds (for 'done' events) */
+    durationMs?: number;
+    /** Input tokens consumed (for 'done' events) */
+    tokensIn?: number;
+    /** Output tokens generated (for 'done' events) */
+    tokensOut?: number;
+    /** Model identifier (for 'done' events) */
+    model?: string;
+    /** Error message (for 'error' events) */
+    error?: string;
+}
+/**
+ * Options that control how commands execute.
+ *
+ * These are populated from a combination of config file defaults
+ * and CLI flag overrides.
+ */
+export interface CommandRunOptions {
+    /** Maximum number of concurrent AI calls */
+    concurrency: number;
+    /** Stop pulling new tasks on first error */
+    failFast?: boolean;
+    /** Show debug information (exact prompts sent) */
+    debug?: boolean;
+    /** List files that would be processed without executing */
+    dryRun?: boolean;
+    /** Trace writer for concurrency debugging (no-op when tracing is off) */
+    tracer?: ITraceWriter;
+    /** Progress log for file-based output mirroring (tail -f monitoring) */
+    progressLog?: ProgressLog;
+}
+//# sourceMappingURL=types.d.ts.map

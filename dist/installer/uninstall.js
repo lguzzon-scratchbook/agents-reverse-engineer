@@ -1,0 +1,626 @@
+/**
+ * Uninstall module for agents-reverse-engineer installer
+ *
+ * Handles removing installed command files, hooks, and hook registrations.
+ * Mirrors the installation logic in operations.ts for clean reversal.
+ */
+import { existsSync, unlinkSync, readFileSync, writeFileSync, readdirSync, rmdirSync, rmSync } from 'node:fs';
+import * as path from 'node:path';
+import { parse, modify, applyEdits } from 'jsonc-parser';
+import { resolveInstallPath, getAllRuntimes } from './paths.js';
+import { getClaudeTemplates, getOpenCodeTemplates, getGeminiTemplates, } from '../integration/templates.js';
+const ARE_HOOKS = [
+    // Current
+    { event: 'PostToolUse', filename: 'are-context-loader.js' },
+    // Legacy (for cleaning up old installations)
+    { event: 'SessionStart', filename: 'are-check-update.js' },
+    { event: 'SessionEnd', filename: 'are-session-end.js' },
+];
+/**
+ * Plugin definitions for ARE OpenCode (must match operations.ts)
+ */
+const ARE_PLUGIN_FILENAMES = [
+    'are-check-update.js',
+];
+/**
+ * Agent file created by OpenCode backend's ensureProjectConfig()
+ * (must match OPENCODE_AGENT_NAME in src/ai/backends/opencode.ts)
+ */
+const OPENCODE_AGENT_FILENAME = 'are-summarizer.md';
+/**
+ * Permissions to remove during uninstall (must match operations.ts)
+ */
+const ARE_PERMISSIONS = [
+    'Bash(npx are init*)',
+    'Bash(npx are discover*)',
+    'Bash(npx are generate*)',
+    'Bash(npx are update*)',
+    'Bash(npx are specify*)',
+    'Bash(npx are rebuild*)',
+    'Bash(npx are clean*)',
+    'Bash(rm -f .agents-reverse-engineer/progress.log*)',
+    'Bash(sleep *)',
+];
+/**
+ * Get templates for a specific runtime
+ *
+ * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @returns Array of template objects for the runtime
+ */
+function getTemplatesForRuntime(runtime) {
+    switch (runtime) {
+        case 'claude':
+            return getClaudeTemplates();
+        case 'opencode':
+            return getOpenCodeTemplates();
+        case 'gemini':
+            return getGeminiTemplates();
+    }
+}
+/**
+ * Uninstall files for one or all runtimes
+ *
+ * If runtime is 'all', uninstalls from all supported runtimes.
+ * Otherwise, uninstalls from the specified runtime only.
+ *
+ * @param runtime - Target runtime or 'all'
+ * @param location - Installation location (global or local)
+ * @param dryRun - If true, don't actually delete files
+ * @returns Array of uninstallation results (one per runtime)
+ */
+export function uninstallFiles(runtime, location, dryRun = false) {
+    if (runtime === 'all') {
+        return getAllRuntimes().map((r) => uninstallFilesForRuntime(r, location, dryRun));
+    }
+    return [uninstallFilesForRuntime(runtime, location, dryRun)];
+}
+/**
+ * Uninstall files for a specific runtime
+ *
+ * Removes command templates, hook files, and VERSION file from the installation directory.
+ * Also unregisters hooks from settings.json for Claude global installs.
+ *
+ * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @param location - Installation location (global or local)
+ * @param dryRun - If true, don't actually delete files
+ * @returns Uninstallation result with files deleted
+ */
+function uninstallFilesForRuntime(runtime, location, dryRun) {
+    const basePath = resolveInstallPath(runtime, location);
+    const templates = getTemplatesForRuntime(runtime);
+    const filesCreated = []; // In uninstall context, this tracks files deleted
+    const filesSkipped = []; // Files that didn't exist
+    const errors = [];
+    // Remove command templates
+    for (const template of templates) {
+        // Template path is relative (e.g., .claude/commands/are/generate.md)
+        // Extract the part after the runtime directory (e.g., commands/are/generate.md)
+        const relativePath = template.path.split('/').slice(1).join('/');
+        const fullPath = path.join(basePath, relativePath);
+        if (existsSync(fullPath)) {
+            if (!dryRun) {
+                try {
+                    unlinkSync(fullPath);
+                }
+                catch (err) {
+                    errors.push(`Failed to delete ${fullPath}: ${err}`);
+                    continue;
+                }
+            }
+            filesCreated.push(fullPath); // Track as "deleted"
+        }
+        else {
+            filesSkipped.push(fullPath); // File didn't exist
+        }
+    }
+    // Remove hooks/plugins based on runtime
+    let hookUnregistered = false;
+    if (runtime === 'claude' || runtime === 'gemini') {
+        // Remove all ARE hook files
+        for (const hookDef of ARE_HOOKS) {
+            const hookPath = path.join(basePath, 'hooks', hookDef.filename);
+            if (existsSync(hookPath)) {
+                if (!dryRun) {
+                    try {
+                        unlinkSync(hookPath);
+                    }
+                    catch (err) {
+                        errors.push(`Failed to delete hook ${hookPath}: ${err}`);
+                    }
+                }
+                if (!errors.some((e) => e.includes(hookPath))) {
+                    filesCreated.push(hookPath);
+                }
+            }
+        }
+        // Unregister hooks from settings.json
+        hookUnregistered = unregisterHooks(basePath, runtime, dryRun);
+        // Unregister permissions from settings.json (Claude only)
+        if (runtime === 'claude') {
+            unregisterPermissions(basePath, dryRun);
+        }
+    }
+    else if (runtime === 'opencode') {
+        // Remove all ARE plugin files
+        for (const pluginFilename of ARE_PLUGIN_FILENAMES) {
+            const pluginPath = path.join(basePath, 'plugins', pluginFilename);
+            if (existsSync(pluginPath)) {
+                if (!dryRun) {
+                    try {
+                        unlinkSync(pluginPath);
+                    }
+                    catch (err) {
+                        errors.push(`Failed to delete plugin ${pluginPath}: ${err}`);
+                    }
+                }
+                if (!errors.some((e) => e.includes(pluginPath))) {
+                    filesCreated.push(pluginPath);
+                    hookUnregistered = true;
+                }
+            }
+        }
+        // Remove ARE agent file (created by OpenCode backend's ensureProjectConfig())
+        const agentPath = path.join(basePath, 'agents', OPENCODE_AGENT_FILENAME);
+        if (existsSync(agentPath)) {
+            if (!dryRun) {
+                try {
+                    unlinkSync(agentPath);
+                }
+                catch (err) {
+                    errors.push(`Failed to delete agent ${agentPath}: ${err}`);
+                }
+            }
+            if (!errors.some((e) => e.includes(agentPath))) {
+                filesCreated.push(agentPath);
+            }
+        }
+    }
+    // Remove ARE-VERSION file if exists
+    const versionPath = path.join(basePath, 'ARE-VERSION');
+    if (existsSync(versionPath)) {
+        if (!dryRun) {
+            try {
+                unlinkSync(versionPath);
+            }
+            catch (err) {
+                errors.push(`Failed to delete ARE-VERSION: ${err}`);
+            }
+        }
+        if (!errors.some((e) => e.includes('ARE-VERSION'))) {
+            filesCreated.push(versionPath);
+        }
+    }
+    // Try to clean up empty directories
+    if (!dryRun) {
+        if (runtime === 'claude') {
+            // Claude uses skills format: clean up skills/are-* directories
+            const skillsDir = path.join(basePath, 'skills');
+            cleanupAreSkillDirs(skillsDir);
+            cleanupEmptyDirs(skillsDir);
+        }
+        else if (runtime === 'gemini') {
+            // Gemini uses flat commands/ directory for TOML files
+            const commandsDir = path.join(basePath, 'commands');
+            cleanupEmptyDirs(commandsDir);
+            // Clean up legacy files from old installations
+            cleanupLegacyGeminiFiles(commandsDir);
+        }
+        else {
+            // OpenCode uses commands format with flat .md files
+            const commandsDir = path.join(basePath, 'commands');
+            cleanupEmptyDirs(commandsDir);
+        }
+        // Clean up hooks/plugins directory if empty
+        if (runtime === 'claude' || runtime === 'gemini') {
+            const hooksDir = path.join(basePath, 'hooks');
+            cleanupEmptyDirs(hooksDir);
+        }
+        else if (runtime === 'opencode') {
+            const pluginsDir = path.join(basePath, 'plugins');
+            cleanupEmptyDirs(pluginsDir);
+            const agentsDir = path.join(basePath, 'agents');
+            cleanupEmptyDirs(agentsDir);
+            // Clean up OpenCode plugin infrastructure files if no user content remains
+            // (package.json, node_modules, bun.lock, .gitignore created by OpenCode's plugin system)
+            if (location === 'local') {
+                cleanupOpenCodeInfrastructure(basePath);
+            }
+        }
+    }
+    return {
+        success: errors.length === 0,
+        runtime,
+        location,
+        filesCreated, // Actually files deleted in uninstall context
+        filesSkipped, // Files that didn't exist
+        errors,
+        hookRegistered: hookUnregistered, // Repurpose: true if hook was unregistered
+    };
+}
+/**
+ * Unregister ARE hooks from settings.json
+ *
+ * Removes all ARE hook entries from SessionStart, SessionEnd, and PostToolUse arrays.
+ * Cleans up empty hooks structures. Handles both old and new hook paths.
+ *
+ * @param basePath - Base installation path (e.g., ~/.claude or ~/.gemini)
+ * @param runtime - Target runtime (claude or gemini)
+ * @param dryRun - If true, don't write changes
+ * @returns true if any hook was removed, false if none found
+ */
+export function unregisterHooks(basePath, runtime, dryRun) {
+    if (runtime === 'gemini') {
+        return unregisterGeminiHooks(basePath, dryRun);
+    }
+    return unregisterClaudeHooks(basePath, dryRun);
+}
+/**
+ * Build hook command patterns for matching (includes legacy paths)
+ */
+function getHookPatterns(runtimeDir) {
+    const patterns = [];
+    for (const hookDef of ARE_HOOKS) {
+        // Current path format
+        patterns.push(`node ${runtimeDir}/hooks/${hookDef.filename}`);
+        // Legacy path format
+        patterns.push(`node hooks/${hookDef.filename}`);
+    }
+    return patterns;
+}
+/**
+ * Unregister ARE hooks from Claude Code settings.json
+ */
+function unregisterClaudeHooks(basePath, dryRun) {
+    const settingsPath = path.join(basePath, 'settings.json');
+    // Settings file must exist
+    if (!existsSync(settingsPath)) {
+        return false;
+    }
+    // Load settings (JSONC-aware)
+    let content;
+    try {
+        content = readFileSync(settingsPath, 'utf-8');
+    }
+    catch {
+        return false;
+    }
+    const settings = (parse(content) ?? {});
+    if (!settings.hooks) {
+        return false;
+    }
+    const hookPatterns = getHookPatterns('.claude');
+    let removedAny = false;
+    // Process all hook event types (including legacy SessionEnd for cleanup)
+    for (const eventType of ['SessionStart', 'SessionEnd', 'PostToolUse']) {
+        if (!settings.hooks[eventType]) {
+            continue;
+        }
+        const originalLength = settings.hooks[eventType].length;
+        settings.hooks[eventType] = settings.hooks[eventType].filter((event) => !event.hooks?.some((h) => hookPatterns.includes(h.command)));
+        if (settings.hooks[eventType].length < originalLength) {
+            removedAny = true;
+        }
+        // Clean up empty array
+        if (settings.hooks[eventType].length === 0) {
+            delete settings.hooks[eventType];
+        }
+    }
+    if (!removedAny) {
+        return false;
+    }
+    // Clean up empty hooks object
+    const hooksEmpty = Object.keys(settings.hooks).length === 0;
+    // Write updated settings preserving comments
+    if (!dryRun) {
+        const fmt = { formattingOptions: { tabSize: 2, insertSpaces: true } };
+        const updated = hooksEmpty
+            ? applyEdits(content, modify(content, ['hooks'], undefined, fmt))
+            : applyEdits(content, modify(content, ['hooks'], settings.hooks, fmt));
+        writeFileSync(settingsPath, updated, 'utf-8');
+    }
+    return true;
+}
+/**
+ * Unregister ARE permissions from Claude Code settings.json
+ *
+ * Removes all ARE-related bash command permissions from the allow list.
+ *
+ * @param basePath - Base installation path (e.g., ~/.claude)
+ * @param dryRun - If true, don't write changes
+ * @returns true if any permissions were removed, false if none found
+ */
+export function unregisterPermissions(basePath, dryRun) {
+    const settingsPath = path.join(basePath, 'settings.json');
+    // Settings file must exist
+    if (!existsSync(settingsPath)) {
+        return false;
+    }
+    // Load settings (JSONC-aware)
+    let content;
+    try {
+        content = readFileSync(settingsPath, 'utf-8');
+    }
+    catch {
+        return false;
+    }
+    const settings = (parse(content) ?? {});
+    // Check if permissions.allow exists
+    if (!settings.permissions?.allow) {
+        return false;
+    }
+    const originalLength = settings.permissions.allow.length;
+    // Remove all ARE permissions
+    settings.permissions.allow = settings.permissions.allow.filter((perm) => !ARE_PERMISSIONS.includes(perm));
+    // Check if we actually removed something
+    if (settings.permissions.allow.length === originalLength) {
+        return false;
+    }
+    // Clean up empty structures
+    if (settings.permissions.allow.length === 0) {
+        delete settings.permissions.allow;
+    }
+    const permsEmpty = !settings.permissions || Object.keys(settings.permissions).length === 0;
+    // Write updated settings preserving comments
+    if (!dryRun) {
+        const fmt = { formattingOptions: { tabSize: 2, insertSpaces: true } };
+        const updated = permsEmpty
+            ? applyEdits(content, modify(content, ['permissions'], undefined, fmt))
+            : applyEdits(content, modify(content, ['permissions'], settings.permissions, fmt));
+        writeFileSync(settingsPath, updated, 'utf-8');
+    }
+    return true;
+}
+/**
+ * Unregister ARE hooks from Gemini CLI settings.json
+ */
+function unregisterGeminiHooks(basePath, dryRun) {
+    const settingsPath = path.join(basePath, 'settings.json');
+    // Settings file must exist
+    if (!existsSync(settingsPath)) {
+        return false;
+    }
+    // Load settings (JSONC-aware)
+    let content;
+    try {
+        content = readFileSync(settingsPath, 'utf-8');
+    }
+    catch {
+        return false;
+    }
+    const settings = (parse(content) ?? {});
+    if (!settings.hooks) {
+        return false;
+    }
+    const hookPatterns = getHookPatterns('.gemini');
+    let removedAny = false;
+    // Process both SessionStart and SessionEnd
+    for (const eventType of ['SessionStart', 'SessionEnd']) {
+        if (!settings.hooks[eventType]) {
+            continue;
+        }
+        const originalLength = settings.hooks[eventType].length;
+        settings.hooks[eventType] = settings.hooks[eventType].filter((h) => !hookPatterns.includes(h.command));
+        if (settings.hooks[eventType].length < originalLength) {
+            removedAny = true;
+        }
+        // Clean up empty array
+        if (settings.hooks[eventType].length === 0) {
+            delete settings.hooks[eventType];
+        }
+    }
+    if (!removedAny) {
+        return false;
+    }
+    // Clean up empty hooks object
+    const hooksEmpty = Object.keys(settings.hooks).length === 0;
+    // Write updated settings preserving comments
+    if (!dryRun) {
+        const fmt = { formattingOptions: { tabSize: 2, insertSpaces: true } };
+        const updated = hooksEmpty
+            ? applyEdits(content, modify(content, ['hooks'], undefined, fmt))
+            : applyEdits(content, modify(content, ['hooks'], settings.hooks, fmt));
+        writeFileSync(settingsPath, updated, 'utf-8');
+    }
+    return true;
+}
+/**
+ * Clean up ARE skill directories
+ *
+ * Removes all empty are-* skill directories from the skills folder.
+ *
+ * @param skillsDir - Path to the skills directory
+ */
+function cleanupAreSkillDirs(skillsDir) {
+    try {
+        if (!existsSync(skillsDir)) {
+            return;
+        }
+        const entries = readdirSync(skillsDir);
+        for (const entry of entries) {
+            // Only clean up are-* directories
+            if (entry.startsWith('are-')) {
+                const skillDir = path.join(skillsDir, entry);
+                cleanupEmptyDirs(skillDir);
+            }
+        }
+    }
+    catch {
+        // Ignore errors
+    }
+}
+/**
+ * Clean up empty directories recursively
+ *
+ * Removes a directory if it's empty, then tries parent directories.
+ * Stops when hitting a non-empty directory or the runtime root.
+ *
+ * @param dirPath - Directory path to check and potentially remove
+ */
+function cleanupEmptyDirs(dirPath) {
+    try {
+        if (!existsSync(dirPath)) {
+            return;
+        }
+        const entries = readdirSync(dirPath);
+        if (entries.length === 0) {
+            rmdirSync(dirPath);
+            // Try parent directory (but don't go above runtime root)
+            const parent = path.dirname(dirPath);
+            // Stop at common runtime roots (.claude, .opencode, .gemini)
+            const baseName = path.basename(parent);
+            if (baseName !== '.claude' &&
+                baseName !== '.opencode' &&
+                baseName !== '.gemini' &&
+                baseName !== '.config') {
+                cleanupEmptyDirs(parent);
+            }
+        }
+    }
+    catch {
+        // Ignore errors - directory might be in use or we don't have permissions
+    }
+}
+/**
+ * Clean up legacy Gemini files from old installations
+ *
+ * Removes:
+ * - Old are-*.md files from .gemini/commands/ (pre-TOML format)
+ * - Old .toml files from .gemini/commands/are/ (pre-flat structure)
+ *
+ * @param commandsDir - Path to the commands directory
+ */
+function cleanupLegacyGeminiFiles(commandsDir) {
+    try {
+        if (!existsSync(commandsDir)) {
+            return;
+        }
+        const entries = readdirSync(commandsDir);
+        for (const entry of entries) {
+            // Remove legacy are-*.md files
+            if (entry.startsWith('are-') && entry.endsWith('.md')) {
+                const filePath = path.join(commandsDir, entry);
+                try {
+                    unlinkSync(filePath);
+                }
+                catch {
+                    // Ignore errors
+                }
+            }
+        }
+        // Remove legacy nested are/ directory (old /are:* namespace structure)
+        const areDir = path.join(commandsDir, 'are');
+        if (existsSync(areDir)) {
+            const areEntries = readdirSync(areDir);
+            for (const entry of areEntries) {
+                if (entry.endsWith('.toml')) {
+                    try {
+                        unlinkSync(path.join(areDir, entry));
+                    }
+                    catch {
+                        // Ignore errors
+                    }
+                }
+            }
+            cleanupEmptyDirs(areDir);
+        }
+    }
+    catch {
+        // Ignore errors
+    }
+}
+/**
+ * Clean up OpenCode plugin infrastructure files
+ *
+ * When ARE installs plugins to .opencode/, OpenCode's plugin system creates
+ * infrastructure files (package.json, node_modules/, bun.lock, .gitignore).
+ * After removing ARE files, these artifacts remain. This function removes them
+ * if no other commands or plugins exist in the directory.
+ *
+ * Only safe for local installs — global config dirs may have other content.
+ *
+ * @param basePath - Path to the .opencode directory
+ */
+function cleanupOpenCodeInfrastructure(basePath) {
+    // Only clean up if no commands, plugins, or agents remain
+    const commandsDir = path.join(basePath, 'commands');
+    const pluginsDir = path.join(basePath, 'plugins');
+    const agentsDir = path.join(basePath, 'agents');
+    if (dirHasContent(commandsDir) || dirHasContent(pluginsDir) || dirHasContent(agentsDir)) {
+        return;
+    }
+    // Remove OpenCode plugin infrastructure files
+    const infraFiles = ['package.json', 'bun.lock', '.gitignore'];
+    for (const file of infraFiles) {
+        const filePath = path.join(basePath, file);
+        try {
+            if (existsSync(filePath)) {
+                unlinkSync(filePath);
+            }
+        }
+        catch {
+            // Ignore errors
+        }
+    }
+    // Remove node_modules
+    const nodeModulesDir = path.join(basePath, 'node_modules');
+    if (existsSync(nodeModulesDir)) {
+        try {
+            rmSync(nodeModulesDir, { recursive: true, force: true });
+        }
+        catch {
+            // Ignore errors
+        }
+    }
+    // Try to remove the .opencode directory itself if now empty
+    cleanupEmptyDirs(basePath);
+}
+/**
+ * Check if a directory exists and has any entries
+ *
+ * @param dirPath - Directory path to check
+ * @returns true if directory exists and is non-empty
+ */
+function dirHasContent(dirPath) {
+    try {
+        if (!existsSync(dirPath))
+            return false;
+        return readdirSync(dirPath).length > 0;
+    }
+    catch {
+        return false;
+    }
+}
+/**
+ * Configuration directory name (matches config/loader.ts)
+ */
+const CONFIG_DIR = '.agents-reverse-engineer';
+/**
+ * Delete the .agents-reverse-engineer configuration folder
+ *
+ * Only applicable for local installations. Removes the entire folder
+ * including configuration files and generation plans.
+ *
+ * @param location - Installation location (only 'local' triggers deletion)
+ * @param dryRun - If true, don't actually delete
+ * @returns true if folder was deleted, false if not found or not local
+ */
+export function deleteConfigFolder(location, dryRun) {
+    // Only delete for local installations
+    if (location !== 'local') {
+        return false;
+    }
+    const configPath = path.join(process.cwd(), CONFIG_DIR);
+    if (!existsSync(configPath)) {
+        return false;
+    }
+    if (!dryRun) {
+        try {
+            rmSync(configPath, { recursive: true, force: true });
+        }
+        catch {
+            return false;
+        }
+    }
+    return true;
+}
+//# sourceMappingURL=uninstall.js.map

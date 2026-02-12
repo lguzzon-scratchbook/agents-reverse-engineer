@@ -1,0 +1,490 @@
+/**
+ * File operations for installer module
+ *
+ * Handles copying command/hook files to runtime directories,
+ * verifying installations, and registering hooks in settings.json.
+ */
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parse, modify, applyEdits } from 'jsonc-parser';
+import { resolveInstallPath, getAllRuntimes } from './paths.js';
+import { getClaudeTemplates, getOpenCodeTemplates, getGeminiTemplates, } from '../integration/templates.js';
+/**
+ * Ensure directory exists for a file path
+ *
+ * @param filePath - Full path to the file
+ */
+function ensureDir(filePath) {
+    const dir = path.dirname(filePath);
+    if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+    }
+}
+/**
+ * Get the path to a bundled hook file
+ *
+ * Hooks are bundled in hooks/dist/ during npm prepublishOnly.
+ *
+ * @param hookName - Name of the hook file (e.g., 'are-context-loader.js')
+ * @returns Absolute path to the bundled hook file
+ */
+function getBundledHookPath(hookName) {
+    // Navigate from dist/installer/operations.js to hooks/dist/
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    // From dist/installer/ go up two levels to project root, then to hooks/dist/
+    return path.join(__dirname, '..', '..', 'hooks', 'dist', hookName);
+}
+/**
+ * Read bundled hook content
+ *
+ * @param hookName - Name of the hook file
+ * @returns Hook file content as string
+ * @throws Error if hook file not found
+ */
+function readBundledHook(hookName) {
+    const hookPath = getBundledHookPath(hookName);
+    if (!existsSync(hookPath)) {
+        throw new Error(`Bundled hook not found: ${hookPath}`);
+    }
+    return readFileSync(hookPath, 'utf-8');
+}
+/**
+ * Get templates for a specific runtime
+ *
+ * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @returns Array of template objects for the runtime
+ */
+function getTemplatesForRuntime(runtime) {
+    switch (runtime) {
+        case 'claude':
+            return getClaudeTemplates();
+        case 'opencode':
+            return getOpenCodeTemplates();
+        case 'gemini':
+            return getGeminiTemplates();
+    }
+}
+/**
+ * Install files for one or all runtimes
+ *
+ * If runtime is 'all', installs to all supported runtimes.
+ * Otherwise, installs to the specified runtime only.
+ *
+ * @param runtime - Target runtime or 'all'
+ * @param location - Installation location (global or local)
+ * @param options - Install options (force, dryRun)
+ * @returns Array of installation results (one per runtime)
+ */
+export function installFiles(runtime, location, options) {
+    if (runtime === 'all') {
+        return getAllRuntimes().map((r) => installFilesForRuntime(r, location, options));
+    }
+    return [installFilesForRuntime(runtime, location, options)];
+}
+/**
+ * Install files for a specific runtime
+ *
+ * Copies command templates and hook files to the installation directory.
+ * Skips existing files unless force=true.
+ *
+ * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @param location - Installation location (global or local)
+ * @param options - Install options (force, dryRun)
+ * @returns Installation result with files created/skipped
+ */
+function installFilesForRuntime(runtime, location, options) {
+    const basePath = resolveInstallPath(runtime, location);
+    const templates = getTemplatesForRuntime(runtime);
+    const filesCreated = [];
+    const filesSkipped = [];
+    const errors = [];
+    // Install command templates
+    for (const template of templates) {
+        // Template path is relative (e.g., .claude/commands/are/generate.md)
+        // Extract the part after the runtime directory (e.g., commands/are/generate.md)
+        const relativePath = template.path.split('/').slice(1).join('/');
+        const fullPath = path.join(basePath, relativePath);
+        if (existsSync(fullPath) && !options.force) {
+            filesSkipped.push(fullPath);
+        }
+        else {
+            if (!options.dryRun) {
+                try {
+                    ensureDir(fullPath);
+                    writeFileSync(fullPath, template.content, 'utf-8');
+                }
+                catch (err) {
+                    errors.push(`Failed to write ${fullPath}: ${err}`);
+                    continue;
+                }
+            }
+            filesCreated.push(fullPath);
+        }
+    }
+    // Install hooks/plugins based on runtime
+    let hookRegistered = false;
+    if (runtime === 'claude' || runtime === 'gemini') {
+        // Claude and Gemini: install session hooks
+        for (const hookDef of ARE_HOOKS) {
+            const hookPath = path.join(basePath, 'hooks', hookDef.filename);
+            if (existsSync(hookPath) && !options.force) {
+                filesSkipped.push(hookPath);
+            }
+            else {
+                if (!options.dryRun) {
+                    try {
+                        ensureDir(hookPath);
+                        const hookContent = readBundledHook(hookDef.filename);
+                        writeFileSync(hookPath, hookContent, 'utf-8');
+                    }
+                    catch (err) {
+                        errors.push(`Failed to write hook ${hookPath}: ${err}`);
+                    }
+                }
+                if (!errors.some((e) => e.includes(hookPath))) {
+                    filesCreated.push(hookPath);
+                }
+            }
+        }
+        // Register hooks in settings.json
+        hookRegistered = registerHooks(basePath, runtime, options.dryRun);
+        // Register permissions for Claude (reduces friction for users)
+        if (runtime === 'claude') {
+            const settingsPath = path.join(basePath, 'settings.json');
+            registerPermissions(settingsPath, options.dryRun);
+        }
+    }
+    else if (runtime === 'opencode') {
+        // OpenCode: install plugins (auto-loaded from plugins/ directory)
+        for (const pluginDef of ARE_PLUGINS) {
+            const pluginPath = path.join(basePath, 'plugins', pluginDef.destFilename);
+            if (existsSync(pluginPath) && !options.force) {
+                filesSkipped.push(pluginPath);
+            }
+            else {
+                if (!options.dryRun) {
+                    try {
+                        ensureDir(pluginPath);
+                        const pluginContent = readBundledHook(pluginDef.srcFilename);
+                        writeFileSync(pluginPath, pluginContent, 'utf-8');
+                    }
+                    catch (err) {
+                        errors.push(`Failed to write plugin ${pluginPath}: ${err}`);
+                    }
+                }
+                if (!errors.some((e) => e.includes(pluginPath))) {
+                    filesCreated.push(pluginPath);
+                    hookRegistered = true;
+                }
+            }
+        }
+    }
+    // Write VERSION file if files were created and not dry run
+    let versionWritten = false;
+    if (filesCreated.length > 0 && !options.dryRun) {
+        try {
+            writeVersionFile(basePath, options.dryRun);
+            versionWritten = true;
+        }
+        catch {
+            // Non-fatal, don't add to errors
+        }
+    }
+    return {
+        success: errors.length === 0,
+        runtime,
+        location,
+        filesCreated,
+        filesSkipped,
+        errors,
+        hookRegistered,
+        versionWritten,
+    };
+}
+/**
+ * Verify that installed files exist
+ *
+ * @param files - Array of file paths to verify
+ * @returns Object with success status and list of missing files
+ */
+export function verifyInstallation(files) {
+    const missing = files.filter((f) => !existsSync(f));
+    return {
+        success: missing.length === 0,
+        missing,
+    };
+}
+const ARE_HOOKS = [
+    { event: 'SessionStart', filename: 'are-check-update.js', name: 'are-check-update' },
+    { event: 'PostToolUse', filename: 'are-context-loader.js', name: 'are-context-loader', matcher: 'Read' },
+];
+const ARE_PLUGINS = [
+// Disabled - causing issues in OpenCode
+// { srcFilename: 'opencode-are-check-update.js', destFilename: 'are-check-update.js' },
+];
+/**
+ * Register ARE hooks in settings.json
+ *
+ * Registers PostToolUse hooks (context loader) for Claude Code.
+ * Merges with existing hooks, doesn't overwrite.
+ *
+ * @param basePath - Base installation path (e.g., ~/.claude or ~/.gemini)
+ * @param runtime - Target runtime (claude or gemini)
+ * @param dryRun - If true, don't write changes
+ * @returns true if any hook was added, false if all already existed
+ */
+export function registerHooks(basePath, runtime, dryRun) {
+    // Only for Claude and Gemini installations
+    if (runtime !== 'claude' && runtime !== 'gemini') {
+        return false;
+    }
+    const settingsPath = path.join(basePath, 'settings.json');
+    const runtimeDir = runtime === 'claude' ? '.claude' : '.gemini';
+    if (runtime === 'gemini') {
+        return registerGeminiHooks(settingsPath, runtimeDir, dryRun);
+    }
+    return registerClaudeHooks(settingsPath, runtimeDir, dryRun);
+}
+/**
+ * Register ARE hooks in Claude Code settings.json format
+ */
+function registerClaudeHooks(settingsPath, runtimeDir, dryRun) {
+    // Load or create settings (JSONC-aware)
+    let content = '{}';
+    if (existsSync(settingsPath)) {
+        try {
+            content = readFileSync(settingsPath, 'utf-8');
+        }
+        catch {
+            // If can't read, start with empty object
+        }
+    }
+    const settings = (parse(content) ?? {});
+    // Ensure hooks structure exists
+    if (!settings.hooks) {
+        settings.hooks = {};
+    }
+    let addedAny = false;
+    for (const hookDef of ARE_HOOKS) {
+        const hookCommand = `node ${runtimeDir}/hooks/${hookDef.filename}`;
+        // Ensure event array exists
+        if (!settings.hooks[hookDef.event]) {
+            settings.hooks[hookDef.event] = [];
+        }
+        // Check if hook already exists (by command string match)
+        const hookExists = settings.hooks[hookDef.event].some((event) => event.hooks?.some((h) => h.command === hookCommand));
+        if (!hookExists) {
+            // Define our hook (Claude format: nested hooks array, optional matcher for PostToolUse)
+            const newHook = {
+                ...(hookDef.matcher ? { matcher: hookDef.matcher } : {}),
+                hooks: [
+                    {
+                        type: 'command',
+                        command: hookCommand,
+                    },
+                ],
+            };
+            settings.hooks[hookDef.event].push(newHook);
+            addedAny = true;
+        }
+    }
+    if (!addedAny) {
+        return false;
+    }
+    // Write settings preserving comments outside the hooks section
+    if (!dryRun) {
+        ensureDir(settingsPath);
+        const updated = applyEdits(content, modify(content, ['hooks'], settings.hooks, {
+            formattingOptions: { tabSize: 2, insertSpaces: true },
+        }));
+        writeFileSync(settingsPath, updated, 'utf-8');
+    }
+    return true;
+}
+/**
+ * Permissions to auto-allow for ARE commands
+ */
+const ARE_PERMISSIONS = [
+    'Bash(npx are init*)',
+    'Bash(npx are discover*)',
+    'Bash(npx are generate*)',
+    'Bash(npx are update*)',
+    'Bash(npx are specify*)',
+    'Bash(npx are rebuild*)',
+    'Bash(npx are clean*)',
+    'Bash(rm -f .agents-reverse-engineer/progress.log*)',
+    'Bash(sleep *)',
+];
+/**
+ * Register ARE permissions in Claude Code settings.json
+ *
+ * Adds bash command permissions for ARE commands to reduce friction.
+ *
+ * @param settingsPath - Path to settings.json
+ * @param dryRun - If true, don't write changes
+ * @returns true if permissions were added, false if already existed
+ */
+export function registerPermissions(settingsPath, dryRun) {
+    // Load or create settings (JSONC-aware)
+    let content = '{}';
+    if (existsSync(settingsPath)) {
+        try {
+            content = readFileSync(settingsPath, 'utf-8');
+        }
+        catch {
+            // If can't read, start with empty object
+        }
+    }
+    const settings = (parse(content) ?? {});
+    // Ensure permissions structure exists
+    if (!settings.permissions) {
+        settings.permissions = {};
+    }
+    if (!settings.permissions.allow) {
+        settings.permissions.allow = [];
+    }
+    // Add any missing ARE permissions
+    let addedAny = false;
+    for (const perm of ARE_PERMISSIONS) {
+        if (!settings.permissions.allow.includes(perm)) {
+            settings.permissions.allow.push(perm);
+            addedAny = true;
+        }
+    }
+    if (!addedAny) {
+        return false;
+    }
+    // Write settings preserving comments outside the permissions section
+    if (!dryRun) {
+        ensureDir(settingsPath);
+        const updated = applyEdits(content, modify(content, ['permissions'], settings.permissions, {
+            formattingOptions: { tabSize: 2, insertSpaces: true },
+        }));
+        writeFileSync(settingsPath, updated, 'utf-8');
+    }
+    return true;
+}
+/**
+ * Register ARE hooks in Gemini CLI settings.json format
+ */
+function registerGeminiHooks(settingsPath, runtimeDir, dryRun) {
+    // Load or create settings (JSONC-aware)
+    let content = '{}';
+    if (existsSync(settingsPath)) {
+        try {
+            content = readFileSync(settingsPath, 'utf-8');
+        }
+        catch {
+            // If can't read, start with empty object
+        }
+    }
+    const settings = (parse(content) ?? {});
+    // Ensure hooks structure exists
+    if (!settings.hooks) {
+        settings.hooks = {};
+    }
+    let addedAny = false;
+    for (const hookDef of ARE_HOOKS) {
+        // Gemini only supports SessionStart hooks
+        if (hookDef.event !== 'SessionStart')
+            continue;
+        const hookCommand = `node ${runtimeDir}/hooks/${hookDef.filename}`;
+        // Ensure event array exists
+        if (!settings.hooks[hookDef.event]) {
+            settings.hooks[hookDef.event] = [];
+        }
+        // Check if hook already exists (by command string match)
+        const hookExists = settings.hooks[hookDef.event].some((h) => h.command === hookCommand);
+        if (!hookExists) {
+            // Define our hook (Gemini format: flat object with name)
+            const newHook = {
+                name: hookDef.name,
+                type: 'command',
+                command: hookCommand,
+            };
+            settings.hooks[hookDef.event].push(newHook);
+            addedAny = true;
+        }
+    }
+    if (!addedAny) {
+        return false;
+    }
+    // Write settings preserving comments outside the hooks section
+    if (!dryRun) {
+        ensureDir(settingsPath);
+        const updated = applyEdits(content, modify(content, ['hooks'], settings.hooks, {
+            formattingOptions: { tabSize: 2, insertSpaces: true },
+        }));
+        writeFileSync(settingsPath, updated, 'utf-8');
+    }
+    return true;
+}
+/**
+ * Get package version from package.json
+ *
+ * @returns Version string or 'unknown' if can't read
+ */
+export function getPackageVersion() {
+    try {
+        // Navigate from dist/installer/operations.js to package.json
+        // In ESM, we need to use import.meta.url
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        // From src/installer/ go up two levels to project root
+        const packagePath = path.join(__dirname, '..', '..', 'package.json');
+        const content = readFileSync(packagePath, 'utf-8');
+        const pkg = JSON.parse(content);
+        return pkg.version || 'unknown';
+    }
+    catch {
+        return 'unknown';
+    }
+}
+/**
+ * Write ARE-VERSION file to track installed version
+ *
+ * @param basePath - Base installation path
+ * @param dryRun - If true, don't write the file
+ */
+export function writeVersionFile(basePath, dryRun) {
+    if (dryRun) {
+        return;
+    }
+    const versionPath = path.join(basePath, 'ARE-VERSION');
+    const version = getPackageVersion();
+    ensureDir(versionPath);
+    writeFileSync(versionPath, version, 'utf-8');
+}
+/**
+ * Format installation result for display
+ *
+ * Generates human-readable lines showing created/skipped files.
+ *
+ * @param result - Installation result to format
+ * @returns Array of formatted lines for display
+ */
+export function formatInstallResult(result) {
+    const lines = [];
+    // Header with runtime and location
+    lines.push(`  ${result.runtime} (${result.location}):`);
+    // Created files
+    for (const file of result.filesCreated) {
+        lines.push(`    Created: ${file}`);
+    }
+    // Skipped files
+    for (const file of result.filesSkipped) {
+        lines.push(`    Skipped: ${file} (already exists)`);
+    }
+    // Hook registration status (Claude only)
+    if (result.hookRegistered) {
+        lines.push(`    Registered: hooks in settings.json`);
+    }
+    // Summary line
+    const created = result.filesCreated.length;
+    const skipped = result.filesSkipped.length;
+    lines.push(`    ${created} files installed, ${skipped} skipped`);
+    return lines;
+}
+//# sourceMappingURL=operations.js.map
