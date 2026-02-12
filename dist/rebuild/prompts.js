@@ -1,0 +1,89 @@
+/**
+ * Prompt templates for AI-driven project reconstruction.
+ *
+ * Provides the system prompt that instructs the AI to generate source files
+ * using `===FILE:===` / `===END_FILE===` delimiters, and a per-unit user
+ * prompt builder that combines the full spec, current phase, and already-built
+ * context.
+ *
+ * @module
+ */
+/**
+ * System prompt for AI-driven project reconstruction.
+ *
+ * Instructs the model to emit source files using `===FILE: path===` /
+ * `===END_FILE===` delimiters with production-quality code that follows
+ * the spec's architecture and type definitions.
+ */
+export const REBUILD_SYSTEM_PROMPT = `You reconstruct source code from a project specification.
+
+TASK:
+Generate all source files for the described module/phase. The code must be complete, compilable, and production-ready.
+
+OUTPUT FORMAT:
+Use this exact delimiter format for EVERY file:
+
+===FILE: relative/path.ext===
+[file content]
+===END_FILE===
+
+Generate ONLY the file content between delimiters. No markdown fencing, no commentary, no explanations outside the file delimiters.
+
+QUALITY:
+- Code must compile. Use exact type names, function signatures, and constants from the spec.
+- Follow the architecture and patterns described in the specification.
+- Imports must reference real modules described in the spec.
+- Generate production code only (no tests, no stubs, no placeholders).
+- Do not invent features not in the spec.
+- Do not add comments explaining what the spec says — write the code the spec describes.
+
+STRICT COMPLIANCE:
+- When the specification defines exact names for functions, methods, types, classes, or constants, you MUST use those exact names. Do not invent synonyms (e.g., if the spec says done(), do not write reportSuccess()).
+- Pay close attention to the "Interfaces for This Phase" section in the current phase — it contains the exact signatures you must implement.
+- When "Already Built" context shows an exported symbol, import and use it. Do not redefine it.
+
+DELIMITER RULES:
+- ===FILE: and ===END_FILE=== MUST appear on their own line with NO leading whitespace.
+- If your generated code contains the literal text "===FILE:" (e.g., in a parser or template), ensure it is indented or inside a string — never at column 0.
+
+CONTEXT AWARENESS:
+When "Already Built" context is provided, import from those modules and use their exported types/functions. Do not redefine types that already exist in built modules.
+When "Already Built" context provides a function or method signature, your code MUST call it using the exact name shown. Match the API precisely.`;
+/**
+ * Build the system + user prompt pair for a single rebuild unit.
+ *
+ * The user prompt includes:
+ * 1. Full specification for reference
+ * 2. Current phase/module to build
+ * 3. Already-built context (exported signatures from prior groups)
+ * 4. Output format reminder
+ *
+ * @param unit - The rebuild unit to generate code for
+ * @param fullSpec - Concatenated content of all spec files
+ * @param builtContext - Exported type signatures from previously built modules
+ * @returns Prompt pair with system and user strings
+ */
+export function buildRebuildPrompt(unit, fullSpec, builtContext) {
+    const sections = [
+        'Reconstruct the following module from this specification.',
+        '',
+        '## Full Specification',
+        '',
+        fullSpec,
+        '',
+        '## Current Phase',
+        '',
+        'Build the module described in this phase:',
+        '',
+        unit.specContent,
+    ];
+    if (builtContext) {
+        sections.push('', '## Already Built', '', 'The following modules have been built. Import from them as needed:', '', builtContext);
+    }
+    sections.push('', '## Output Format', '', 'Emit each file using:', '===FILE: path/to/file.ext===', '[content]', '===END_FILE===', '', 'Generate ALL files needed for this phase. Use relative paths from the project root.');
+    return {
+        system: REBUILD_SYSTEM_PROMPT,
+        user: sections.join('\n'),
+    };
+}
+//# sourceMappingURL=prompts.js.map

@@ -1,0 +1,91 @@
+/**
+ * AI output parser for multi-file rebuild responses.
+ *
+ * Extracts individual files from AI-generated responses using
+ * `===FILE: path===` / `===END_FILE===` delimiters, with a fallback
+ * to markdown fenced code blocks with file path annotations.
+ *
+ * @module
+ */
+/**
+ * Parse multi-file AI output into a Map of file paths to contents.
+ *
+ * Primary format: `===FILE: path===` / `===END_FILE===` delimiters.
+ * Fallback format: Markdown fenced code blocks with `language:path` annotation.
+ *
+ * File paths are trimmed. File content is NOT trimmed (preserves indentation).
+ * Returns an empty Map if neither format matches (caller handles error case).
+ *
+ * @param responseText - Raw AI response text
+ * @returns Map of relative file paths to file contents
+ */
+export function parseModuleOutput(responseText) {
+    // Primary: ===FILE: path=== / ===END_FILE=== delimiters
+    const files = parseDelimiterFormat(responseText);
+    if (files.size > 0)
+        return files;
+    // Fallback: markdown fenced code blocks with file path annotation
+    return parseFencedBlockFormat(responseText);
+}
+/**
+ * Parse `===FILE: path===` / `===END_FILE===` delimited output.
+ *
+ * Uses a line-by-line state machine requiring delimiters at column 0
+ * (start of line) to avoid matching delimiter text embedded inside
+ * generated source code (string literals, JSDoc, prompt templates).
+ */
+function parseDelimiterFormat(text) {
+    const files = new Map();
+    const START_RE = /^===FILE:\s*(.+?)===$/;
+    const END_RE = /^===END_FILE===$/;
+    const lines = text.split('\n');
+    let currentPath = null;
+    let contentLines = [];
+    for (const line of lines) {
+        if (currentPath === null) {
+            // Looking for a file start delimiter
+            const startMatch = START_RE.exec(line);
+            if (startMatch) {
+                currentPath = startMatch[1].trim();
+                contentLines = [];
+            }
+            // Ignore non-delimiter lines outside of file blocks
+        }
+        else {
+            // Inside a file block — check for end delimiter
+            if (END_RE.test(line)) {
+                files.set(currentPath, contentLines.join('\n'));
+                currentPath = null;
+                contentLines = [];
+            }
+            else {
+                contentLines.push(line);
+            }
+        }
+    }
+    // Handle unclosed file block (AI forgot ===END_FILE===)
+    if (currentPath !== null && contentLines.length > 0) {
+        files.set(currentPath, contentLines.join('\n'));
+    }
+    return files;
+}
+/**
+ * Parse markdown fenced code blocks with file path annotations.
+ *
+ * Matches blocks like:
+ * ```language:path/to/file
+ * content
+ * ```
+ */
+function parseFencedBlockFormat(text) {
+    const files = new Map();
+    const pattern = /```\w*:([^\n]+)\n([\s\S]*?)```/g;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+        const filePath = match[1].trim();
+        const content = match[2];
+        files.set(filePath, content);
+    }
+    return files;
+}
+//# sourceMappingURL=output-parser.js.map
