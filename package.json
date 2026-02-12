@@ -16,22 +16,20 @@
   },
   "dependencies": {
     "fast-glob": "^3.3.3",
-    "ignore": "^7.0.3",
-    "isbinaryfile": "^5.0.4",
+    "ignore": "^7.0.5",
+    "isbinaryfile": "^6.0.0",
     "jsonc-parser": "^3.3.1",
     "picocolors": "^1.1.1",
-    "simple-git": "^3.27.0",
-    "yaml": "^2.7.0",
-    "zod": "^3.24.1"
+    "simple-git": "^3.30.0",
+    "yaml": "^2.8.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^22.10.7",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "@types/node": "^25.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "engines": {"node": ">=18.0.0"},
   "keywords": [
     "documentation",
     "codebase",
@@ -59,12 +57,7 @@
     }
   },
   "main": "dist/cli/index.js",
-  "files": [
-    "dist",
-    "hooks/dist",
-    "README.md",
-    "LICENSE"
-  ],
+  "files": ["dist", "hooks/dist", "README.md", "LICENSE"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/GeoloeG-IsT/agents-reverse-engineer.git"

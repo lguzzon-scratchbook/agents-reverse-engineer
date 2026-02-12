@@ -47,7 +47,7 @@ const ClaudeResponseSchema = z.object({
     cache_read_input_tokens: z.number(),
     output_tokens: z.number(),
   }).passthrough(),
-  modelUsage: z.record(z.object({
+  modelUsage: z.record(z.string(), z.object({
     inputTokens: z.number(),
     outputTokens: z.number(),
     cacheReadInputTokens: z.number(),

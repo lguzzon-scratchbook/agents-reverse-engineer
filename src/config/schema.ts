@@ -24,7 +24,7 @@ const ExcludeSchema = z.object({
   vendorDirs: z.array(z.string()).default([...DEFAULT_VENDOR_DIRS]),
   /** Binary file extensions to exclude */
   binaryExtensions: z.array(z.string()).default([...DEFAULT_BINARY_EXTENSIONS]),
-}).default({});
+});
 
 /**
  * Schema for options configuration
@@ -34,7 +34,7 @@ const OptionsSchema = z.object({
   followSymlinks: z.boolean().default(false),
   /** Maximum file size in bytes (files larger than this are skipped) */
   maxFileSize: z.number().positive().default(DEFAULT_MAX_FILE_SIZE),
-}).default({});
+});
 
 /**
  * Schema for output configuration
@@ -42,7 +42,7 @@ const OptionsSchema = z.object({
 const OutputSchema = z.object({
   /** Whether to use colors in terminal output */
   colors: z.boolean().default(true),
-}).default({});
+});
 
 /**
  * Schema for generation configuration.
@@ -62,7 +62,7 @@ const GenerationSchema = z.object({
    * The annex mechanism bypasses compression for reproduction-critical content.
    */
   compressionRatio: z.number().min(0.1).max(1.0).default(0.25),
-}).default({});
+});
 
 /**
  * Schema for AI service configuration.
@@ -85,8 +85,8 @@ const AISchema = z.object({
   telemetry: z.object({
     /** Number of most recent run logs to keep on disk */
     keepRuns: z.number().min(0).default(50),
-  }).default({}),
-}).default({});
+  }),
+});
 
 /**
  * Main configuration schema for agents-reverse.
@@ -117,7 +117,7 @@ export const ConfigSchema = z.object({
   generation: GenerationSchema,
   /** AI service configuration */
   ai: AISchema,
-}).default({});
+});
 
 /**
  * Inferred TypeScript type from the schema.

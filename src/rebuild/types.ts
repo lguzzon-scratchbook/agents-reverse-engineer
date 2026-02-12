@@ -19,8 +19,8 @@ export const RebuildCheckpointSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   outputDir: z.string(),
-  specHashes: z.record(z.string()),
-  modules: z.record(z.object({
+  specHashes: z.record(z.string(), z.string()),
+  modules: z.record(z.string(), z.object({
     status: z.enum(['pending', 'done', 'failed']),
     completedAt: z.string().optional(),
     error: z.string().optional(),

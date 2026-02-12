@@ -176,7 +176,10 @@ export class CheckpointManager {
    */
   getPendingUnits(): string[] {
     return Object.entries(this.data.modules)
-      .filter(([, mod]) => mod.status === 'pending' || mod.status === 'failed')
+      .filter(([, mod]) => {
+        const status = (mod as { status?: string }).status;
+        return status === 'pending' || status === 'failed';
+      })
       .map(([name]) => name);
   }
 
@@ -184,7 +187,8 @@ export class CheckpointManager {
    * Check if a unit has been completed.
    */
   isDone(unitName: string): boolean {
-    return this.data.modules[unitName]?.status === 'done';
+    const mod = this.data.modules[unitName] as { status?: string } | undefined;
+    return mod?.status === 'done';
   }
 
   /**
