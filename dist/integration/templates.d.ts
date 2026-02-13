@@ -1,13 +1,17 @@
 /**
  * Template generators for AI coding assistant integration files
  *
- * Generates command file templates for Claude Code, OpenCode, Gemini CLI, and session hooks.
+ * Generates command file templates for Claude Code, Codex, OpenCode, and Gemini CLI.
  */
 import type { IntegrationTemplate } from './types.js';
 /**
  * Get Claude Code command file templates
  */
 export declare function getClaudeTemplates(): IntegrationTemplate[];
+/**
+ * Get Codex command file templates
+ */
+export declare function getCodexTemplates(): IntegrationTemplate[];
 /**
  * Get OpenCode command file templates
  */

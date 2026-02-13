@@ -48,7 +48,7 @@ export function parseInstallerArgs(args) {
     }
     // Validate runtime value if provided
     const runtimeValue = values.get('runtime');
-    const validRuntimes = ['claude', 'opencode', 'gemini', 'all'];
+    const validRuntimes = ['claude', 'codex', 'opencode', 'gemini', 'all'];
     const runtime = runtimeValue && validRuntimes.includes(runtimeValue)
         ? runtimeValue
         : undefined;

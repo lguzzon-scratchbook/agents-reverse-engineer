@@ -83,6 +83,7 @@ export function runSubprocess(command, args, options) {
             encoding: 'utf-8',
             env: {
                 ...process.env,
+                ...(options.env ?? {}),
             },
         }, (error, stdout, stderr) => {
             const durationMs = Date.now() - startTime;

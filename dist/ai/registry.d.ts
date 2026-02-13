@@ -49,8 +49,9 @@ export declare class BackendRegistry {
  *
  * Registration order determines auto-detection priority:
  * 1. Claude (recommended, fully implemented)
- * 2. Gemini (experimental, stub)
- * 3. OpenCode (experimental, stub)
+ * 2. Codex (production)
+ * 3. Gemini (experimental, stub)
+ * 4. OpenCode (production)
  *
  * @returns A populated {@link BackendRegistry}
  *
@@ -69,7 +70,7 @@ export declare function createBackendRegistry(): BackendRegistry;
  * available.
  *
  * Priority order is determined by registration order in
- * {@link createBackendRegistry}: Claude > Gemini > OpenCode.
+ * {@link createBackendRegistry}: Claude > Codex > Gemini > OpenCode.
  *
  * @param registry - The backend registry to search
  * @returns The first available backend, or `null` if none found

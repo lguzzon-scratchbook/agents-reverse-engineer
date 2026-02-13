@@ -1,7 +1,7 @@
 /**
  * Template generators for AI coding assistant integration files
  *
- * Generates command file templates for Claude Code, OpenCode, Gemini CLI, and session hooks.
+ * Generates command file templates for Claude Code, Codex, OpenCode, and Gemini CLI.
  */
 // =============================================================================
 // Shared Command Content
@@ -507,6 +507,7 @@ Install ARE commands to your AI assistant:
 \`\`\`bash
 npx agents-reverse-engineer install              # Interactive mode
 npx agents-reverse-engineer install --runtime claude -g  # Global Claude
+npx agents-reverse-engineer install --runtime codex -g   # Global Codex
 npx agents-reverse-engineer install --runtime claude -l  # Local project
 npx agents-reverse-engineer install --runtime all -g     # All runtimes
 \`\`\`
@@ -514,7 +515,7 @@ npx agents-reverse-engineer install --runtime all -g     # All runtimes
 **Install/Uninstall Options:**
 | Flag | Description |
 |------|-------------|
-| \`--runtime <name>\` | Target: \`claude\`, \`opencode\`, \`gemini\`, \`all\` |
+| \`--runtime <name>\` | Target: \`claude\`, \`codex\`, \`opencode\`, \`gemini\`, \`all\` |
 | \`-g, --global\` | Install to global config directory |
 | \`-l, --local\` | Install to current project directory |
 | \`--force\` | Overwrite existing files (install only) |
@@ -624,6 +625,13 @@ const PLATFORM_CONFIGS = {
         usesName: true,
         versionFilePath: '.claude/ARE-VERSION',
     },
+    codex: {
+        commandPrefix: '/are-',
+        pathPrefix: '.agents/skills/',
+        filenameSeparator: '.',
+        usesName: true,
+        versionFilePath: '.agents/ARE-VERSION',
+    },
     opencode: {
         commandPrefix: '/are-',
         pathPrefix: '.opencode/commands/',
@@ -640,13 +648,16 @@ const PLATFORM_CONFIGS = {
         versionFilePath: '.gemini/ARE-VERSION',
     },
 };
-function buildFrontmatter(platform, commandName, description) {
+function buildFrontmatter(platform, commandName, description, argumentHint) {
     const config = PLATFORM_CONFIGS[platform];
     const lines = ['---'];
     if (config.usesName) {
         lines.push(`name: are-${commandName}`);
     }
     lines.push(`description: ${description}`);
+    if (platform === 'codex' && argumentHint) {
+        lines.push(`argument-hint: ${JSON.stringify(argumentHint)}`);
+    }
     if (config.extraFrontmatter) {
         lines.push(config.extraFrontmatter);
     }
@@ -681,6 +692,7 @@ function buildTemplate(platform, commandName, command) {
     const config = PLATFORM_CONFIGS[platform];
     // Platform-specific file naming:
     // - Claude: .claude/skills/are-{command}/SKILL.md
+    // - Codex: .agents/skills/are-{command}/SKILL.md
     // - OpenCode: .opencode/commands/are-{command}.md
     // - Gemini: .gemini/commands/are-{command}.toml (TOML format)
     if (platform === 'gemini') {
@@ -693,11 +705,12 @@ function buildTemplate(platform, commandName, command) {
             content: `${content}\n`,
         };
     }
-    const filename = platform === 'claude' ? 'SKILL.md' : `are-${commandName}.md`;
-    const path = platform === 'claude'
+    const usesSkillFile = platform === 'claude' || platform === 'codex';
+    const filename = usesSkillFile ? 'SKILL.md' : `are-${commandName}.md`;
+    const path = usesSkillFile
         ? `${config.pathPrefix}are-${commandName}/${filename}`
         : `${config.pathPrefix}${filename}`;
-    const frontmatter = buildFrontmatter(platform, commandName, command.description);
+    const frontmatter = buildFrontmatter(platform, commandName, command.description, command.argumentHint);
     // Replace placeholders in content
     const content = command.content
         .replace(/COMMAND_PREFIX/g, config.commandPrefix)
@@ -720,6 +733,12 @@ function getTemplatesForPlatform(platform) {
  */
 export function getClaudeTemplates() {
     return getTemplatesForPlatform('claude');
+}
+/**
+ * Get Codex command file templates
+ */
+export function getCodexTemplates() {
+    return getTemplatesForPlatform('codex');
 }
 /**
  * Get OpenCode command file templates

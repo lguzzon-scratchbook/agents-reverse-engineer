@@ -49,7 +49,7 @@ export declare function verifyInstallation(files: string[]): {
  */
 export declare function registerHooks(basePath: string, runtime: Exclude<Runtime, 'all'>, dryRun: boolean): boolean;
 /**
- * Register ARE permissions in Claude Code settings.json
+ * Register ARE permissions in settings.json
  *
  * Adds bash command permissions for ARE commands to reduce friction.
  *

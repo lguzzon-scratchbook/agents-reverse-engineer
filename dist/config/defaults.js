@@ -54,6 +54,7 @@ export const DEFAULT_VENDOR_DIRS = [
     '.agents',
     '.planning',
     '.claude',
+    '.codex',
     '.opencode',
     '.gemini',
 ];
@@ -64,10 +65,12 @@ export const DEFAULT_VENDOR_DIRS = [
 export const DEFAULT_EXCLUDE_PATTERNS = [
     // AI assistant documentation files
     'AGENTS.md',
+    'AGENTS.override.md',
     'CLAUDE.md',
     'OPENCODE.md',
     'GEMINI.md',
     '**/AGENTS.md',
+    '**/AGENTS.override.md',
     '**/CLAUDE.md',
     '**/OPENCODE.md',
     '**/GEMINI.md',

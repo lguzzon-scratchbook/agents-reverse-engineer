@@ -9,6 +9,7 @@
  */
 import { AIServiceError } from './types.js';
 import { ClaudeBackend } from './backends/claude.js';
+import { CodexBackend } from './backends/codex.js';
 import { GeminiBackend } from './backends/gemini.js';
 import { OpenCodeBackend } from './backends/opencode.js';
 // ---------------------------------------------------------------------------
@@ -64,8 +65,9 @@ export class BackendRegistry {
  *
  * Registration order determines auto-detection priority:
  * 1. Claude (recommended, fully implemented)
- * 2. Gemini (experimental, stub)
- * 3. OpenCode (experimental, stub)
+ * 2. Codex (production)
+ * 3. Gemini (experimental, stub)
+ * 4. OpenCode (production)
  *
  * @returns A populated {@link BackendRegistry}
  *
@@ -78,6 +80,7 @@ export class BackendRegistry {
 export function createBackendRegistry() {
     const registry = new BackendRegistry();
     registry.register(new ClaudeBackend());
+    registry.register(new CodexBackend());
     registry.register(new GeminiBackend());
     registry.register(new OpenCodeBackend());
     return registry;
@@ -93,7 +96,7 @@ export function createBackendRegistry() {
  * available.
  *
  * Priority order is determined by registration order in
- * {@link createBackendRegistry}: Claude > Gemini > OpenCode.
+ * {@link createBackendRegistry}: Claude > Codex > Gemini > OpenCode.
  *
  * @param registry - The backend registry to search
  * @returns The first available backend, or `null` if none found
@@ -168,7 +171,7 @@ export function getInstallInstructions(registry) {
  */
 export async function resolveBackend(registry, requested) {
     if (requested === 'auto') {
-        // PATH scan in registration order (Claude > Gemini > OpenCode)
+        // PATH scan in registration order (Claude > Codex > Gemini > OpenCode)
         const detected = await detectBackend(registry);
         if (detected) {
             return detected;

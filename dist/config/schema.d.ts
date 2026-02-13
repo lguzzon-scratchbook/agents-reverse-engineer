@@ -44,6 +44,7 @@ declare const GenerationSchema: z.ZodObject<{
 declare const AISchema: z.ZodObject<{
     backend: z.ZodDefault<z.ZodEnum<{
         claude: "claude";
+        codex: "codex";
         gemini: "gemini";
         opencode: "opencode";
         auto: "auto";
@@ -93,6 +94,7 @@ export declare const ConfigSchema: z.ZodObject<{
     ai: z.ZodObject<{
         backend: z.ZodDefault<z.ZodEnum<{
             claude: "claude";
+            codex: "codex";
             gemini: "gemini";
             opencode: "opencode";
             auto: "auto";

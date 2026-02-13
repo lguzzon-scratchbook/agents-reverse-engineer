@@ -15,12 +15,12 @@ export declare function getDefaultConcurrency(): number;
  * Default vendor directories to exclude from analysis.
  * These are typically package managers, build outputs, or version control directories.
  */
-export declare const DEFAULT_VENDOR_DIRS: readonly ["node_modules", "vendor", ".git", "dist", "build", "__pycache__", ".next", "venv", ".venv", "target", ".cargo", ".gradle", ".agents-reverse-engineer", ".agents", ".planning", ".claude", ".opencode", ".gemini"];
+export declare const DEFAULT_VENDOR_DIRS: readonly ["node_modules", "vendor", ".git", "dist", "build", "__pycache__", ".next", "venv", ".venv", "target", ".cargo", ".gradle", ".agents-reverse-engineer", ".agents", ".planning", ".claude", ".codex", ".opencode", ".gemini"];
 /**
  * Default file patterns to exclude from analysis.
  * These patterns use gitignore syntax and are matched by the custom filter.
  */
-export declare const DEFAULT_EXCLUDE_PATTERNS: readonly ["AGENTS.md", "CLAUDE.md", "OPENCODE.md", "GEMINI.md", "**/AGENTS.md", "**/CLAUDE.md", "**/OPENCODE.md", "**/GEMINI.md", "*.local.md", "**/*.local.md", "*.lock", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb", "Gemfile.lock", "Cargo.lock", "poetry.lock", "composer.lock", "go.sum", ".gitignore", ".gitattributes", ".gitkeep", ".env", "**/.env", "**/.env.*", "*.log", "*.sum", "**/*.sum", "**/SKILL.md"];
+export declare const DEFAULT_EXCLUDE_PATTERNS: readonly ["AGENTS.md", "AGENTS.override.md", "CLAUDE.md", "OPENCODE.md", "GEMINI.md", "**/AGENTS.md", "**/AGENTS.override.md", "**/CLAUDE.md", "**/OPENCODE.md", "**/GEMINI.md", "*.local.md", "**/*.local.md", "*.lock", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb", "Gemfile.lock", "Cargo.lock", "poetry.lock", "composer.lock", "go.sum", ".gitignore", ".gitattributes", ".gitkeep", ".env", "**/.env", "**/.env.*", "*.log", "*.sum", "**/*.sum", "**/SKILL.md"];
 /**
  * Default binary file extensions to exclude from analysis.
  * These files cannot be meaningfully analyzed as text.
@@ -43,8 +43,8 @@ export declare const DEFAULT_COMPRESSION_RATIO = 0.25;
  */
 export declare const DEFAULT_CONFIG: {
     readonly exclude: {
-        readonly patterns: readonly ["AGENTS.md", "CLAUDE.md", "OPENCODE.md", "GEMINI.md", "**/AGENTS.md", "**/CLAUDE.md", "**/OPENCODE.md", "**/GEMINI.md", "*.local.md", "**/*.local.md", "*.lock", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb", "Gemfile.lock", "Cargo.lock", "poetry.lock", "composer.lock", "go.sum", ".gitignore", ".gitattributes", ".gitkeep", ".env", "**/.env", "**/.env.*", "*.log", "*.sum", "**/*.sum", "**/SKILL.md"];
-        readonly vendorDirs: readonly ["node_modules", "vendor", ".git", "dist", "build", "__pycache__", ".next", "venv", ".venv", "target", ".cargo", ".gradle", ".agents-reverse-engineer", ".agents", ".planning", ".claude", ".opencode", ".gemini"];
+        readonly patterns: readonly ["AGENTS.md", "AGENTS.override.md", "CLAUDE.md", "OPENCODE.md", "GEMINI.md", "**/AGENTS.md", "**/AGENTS.override.md", "**/CLAUDE.md", "**/OPENCODE.md", "**/GEMINI.md", "*.local.md", "**/*.local.md", "*.lock", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb", "Gemfile.lock", "Cargo.lock", "poetry.lock", "composer.lock", "go.sum", ".gitignore", ".gitattributes", ".gitkeep", ".env", "**/.env", "**/.env.*", "*.log", "*.sum", "**/*.sum", "**/SKILL.md"];
+        readonly vendorDirs: readonly ["node_modules", "vendor", ".git", "dist", "build", "__pycache__", ".next", "venv", ".venv", "target", ".cargo", ".gradle", ".agents-reverse-engineer", ".agents", ".planning", ".claude", ".codex", ".opencode", ".gemini"];
         readonly binaryExtensions: readonly [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".zip", ".tar", ".gz", ".rar", ".7z", ".exe", ".dll", ".so", ".dylib", ".mp3", ".mp4", ".wav", ".pdf", ".woff", ".woff2", ".ttf", ".eot", ".class", ".pyc"];
     };
     readonly options: {
