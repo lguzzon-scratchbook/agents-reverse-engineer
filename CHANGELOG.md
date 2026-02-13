@@ -7,6 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-02-13
+
+### Added
+- **Codex context-rule installation for AGENTS hierarchy loading** — `install --runtime codex` now writes a managed `AGENTS.override.md` rule file in both scopes: local installs create `./AGENTS.override.md` and global installs create `~/.codex/AGENTS.override.md`, so assistants load nearest `AGENTS.override.md`/`AGENTS.md` plus parent directories while working in a repo.
+
+### Changed
+- **Safe overwrite behavior for context rules** — `--force` now overwrites `AGENTS.override.md` only when the file contains ARE's managed marker, preventing accidental replacement of user-authored override files.
+- **Codex uninstall now cleans up managed context rules** — `uninstall --runtime codex` now removes installer-managed `AGENTS.override.md` files (local and global) in addition to deleting `.codex/rules/are.rules`.
+- **Discovery defaults now ignore context-rule files** — `AGENTS.override.md` and `**/AGENTS.override.md` are now excluded by default in `DEFAULT_EXCLUDE_PATTERNS` so installer-managed rules are not analyzed as source docs.
+
+## [0.9.8] - 2026-02-13
+
+### Added
+- **Project-local npm cache configuration for npx reliability** — Added root `.npmrc` with `cache=.agents-reverse-engineer/.npm-cache` and updated `.gitignore` to exclude `.agents-reverse-engineer/.npm-cache/`, preventing failures caused by broken or permission-denied global `~/.npm` caches.
+
+### Changed
+- **Repository Codex model default updated** — Updated `.agents-reverse-engineer/config.yaml` to use `ai.model: gpt-5-nano` instead of `gpt-4o` for Codex runs in this project.
+
+### Fixed
+- **Codex response parsing no longer leaks reasoning content** — `src/ai/backends/codex.ts` now extracts output from `item.completed` entries where `item.type === "agent_message"` and ignores `reasoning` items, preventing thinking text from being written into generated `.sum`/`AGENTS.md` files.
+- **Codex token usage is now captured from CLI events** — `src/ai/backends/codex.ts` now reads `turn.completed.usage` fields (`input_tokens`, `cached_input_tokens`, `output_tokens`) and reports normalized input/output/cache token counts instead of always logging zeros.
+
+## [0.9.7] - 2026-02-13
+
+### Changed
+- **Codex subprocesses no longer force project-local `CODEX_HOME`** - ARE now runs Codex CLI with the ambient environment instead of auto-overriding `CODEX_HOME` to `./.codex` when that directory exists. This prevents auth context mismatches where the interactive Codex session is logged in but ARE subprocesses were routed to an unauthenticated local Codex home.
+- **Bump skill now allows untracked files during release checks** - Release validation now treats untracked files as acceptable and only blocks when tracked/staged changes exist, matching real workflows where generated artifacts may be present but not committed.
+
+## [0.9.6] - 2026-02-13
+
+### Added
+- **Codex install-time command exceptions via rules file** - `install --runtime codex` now creates `.codex/rules/are.rules` (or `~/.codex/rules/are.rules` for global installs) with `prefix_rule` entries for `npx are` commands and progress-log polling helpers (`rm -f .agents-reverse-engineer/progress.log`, `sleep`)
+
+### Changed
+- **Codex uninstall now removes installer-managed rules** - `uninstall --runtime codex` deletes the generated `are.rules` file and cleans empty `.codex/rules` directories
+- **Installer path resolution now models Codex config root explicitly** - added `resolveCodexConfigPath()` to separate Codex CLI config location (`.codex`/`~/.codex`) from ARE skill installation paths (`.agents`/`~/.agents`)
+
+## [0.9.5] - 2026-02-12
+
+### Added
+- **Repository-local `bump` skill under `.agents`** — Added `.agents/skills/bump/SKILL.md` to automate version validation, changelog extraction from commits, tagging, and GitHub release creation directly in the Codex `.agents` skill layout
+
+### Changed
+- **Removed forced npm cache overrides from update-check hooks** — `hooks/are-check-update.js` and `hooks/opencode-are-check-update.js` no longer inject `npm_config_cache` into detached update-check subprocesses
+- **Codex templates no longer prepend `NPM_CONFIG_CACHE`** — `src/integration/templates.ts` now emits plain `npx are` / `npx agents-reverse-engineer` commands for Codex skills instead of forcing `.agents-reverse-engineer/.npm-cache`
+- **Codex backend no longer hardcodes read-only sandbox flag** — `src/ai/backends/codex.ts` removed the forced `--sandbox read-only` argument so sandbox behavior follows Codex CLI defaults/configuration
+
+## [0.9.4] - 2026-02-12
+
+### Changed
+- **Codex paths and docs moved to `.agents` layout** - Updated path handling and documentation references for Codex integrations to use the `.agents` directory structure
+
+### Removed
+- **Outdated OpenCode backend test file** - Removed stale OpenCode backend test coverage no longer aligned with current backend behavior
+
+## [0.9.3] - 2026-02-12
+
+### Added
+- **Subprocess environment overrides for AI backends** — `runSubprocess()` now accepts optional per-call env overrides, and `SubprocessProvider` can pass backend-specific variables into spawned CLI processes
+- **Automatic local `CODEX_HOME` fallback for Codex backend** — when running with backend `codex`, ARE now auto-uses project-local `.codex` as `CODEX_HOME` if present and no explicit `CODEX_HOME` is set
+
+### Changed
+- **Project config now defaults to Codex backend** — `.agents-reverse-engineer/config.yaml` now sets `ai.backend: codex` instead of `auto` for this repository
+
+### Fixed
+- **Directory task filtering in execution planning** — `buildExecutionPlan()` now always skips directories not present in `plannedDirs`, preventing unintended directory-phase work when no directory tasks are planned
+
+## [0.9.2] - 2026-02-12
+
+### Added
+- **Dedicated npm caches for update-check hooks** — `hooks/are-check-update.js` and `hooks/opencode-are-check-update.js` now create runtime-local `npm-cache` directories and set `npm_config_cache` for detached npm version checks, avoiding failures from locked global npm caches
+
+### Changed
+- **Codex command templates now pin a local npm cache** — Codex template generation prefixes `npx are` and `npx agents-reverse-engineer` with `NPM_CONFIG_CACHE=.agents-reverse-engineer/.npm-cache`, improving reliability in Codex sessions
+- **Codex backend invocation updated for current CLI behavior** — backend args now pass approval as global `-a never`, enable `--ephemeral`, and run `exec` in read-only sandbox mode for compatibility with newer `codex` releases
+- **Generated config defaults updated for Codex workflows** — project config now excludes `.codex` in `vendorDirs`, and the default `ai.model` example is updated to `gpt-4o`
+
+### Fixed
+- **Bump skill command examples corrected** — `.codex/skills/bump/SKILL.md` now references `$bump <version>` syntax instead of `/bump <version>`
+
+## [0.9.1] - 2026-02-12
+
+### Added
+- **Codex runtime support in installer** — `install`/`uninstall` now accept `--runtime codex`, interactive runtime selection now includes Codex, and `--runtime all` includes Codex in runtime iteration
+- **Codex installer templates and paths** — Added Codex command template generation under `.codex/skills/are-*/SKILL.md` with `--backend codex` wiring, global/local path resolution via `CODEX_HOME` or `~/.codex`, and `.codex/ARE-VERSION` marker support
+- **Repository-local `bump` skill for release automation** — Added `.codex/skills/bump/SKILL.md` with a step-by-step workflow for semver validation, commit-derived changelog extraction, tagging, pushing, and GitHub release creation
+
+## [0.9.0] - 2026-02-12
+
+### Added
+- **Codex CLI backend support** — Added a new `CodexBackend` adapter (`src/ai/backends/codex.ts`) using `codex exec --json` with robust JSONL parsing and text-output fallback. Auto-detection and backend resolution now include Codex in registry priority order
+- **Codex discoverability in defaults** — Added `.codex` to default vendor directory exclusions so Codex workspace metadata is ignored during file discovery and documentation generation
+
+### Changed
+- **Backend configuration now accepts `codex`** — Updated config schema enum and generated config comments to allow `ai.backend: codex` alongside existing backends
+- **CLI and docs now list Codex backend option** — Updated command help text, command option docs, and README backend descriptions to include `codex` for `--backend`
+
 ## [0.8.13] - 2026-02-12
 
 ### Added
@@ -809,7 +906,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.8.13...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.9...HEAD
+[0.9.9]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.8...v0.9.9
+[0.9.8]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.7...v0.9.8
+[0.9.7]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.6...v0.9.7
+[0.9.6]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.5...v0.9.6
+[0.9.5]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.4...v0.9.5
+[0.9.4]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.3...v0.9.4
+[0.9.3]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.2...v0.9.3
+[0.9.2]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.1...v0.9.2
+[0.9.1]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.9.0...v0.9.1
+[0.9.0]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.8.13...v0.9.0
 [0.8.13]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.8.12...v0.8.13
 [0.8.12]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.8.11...v0.8.12
 [0.8.11]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v0.8.10...v0.8.11

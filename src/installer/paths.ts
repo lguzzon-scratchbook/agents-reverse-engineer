@@ -16,7 +16,7 @@ import type { Runtime, Location, RuntimePaths } from './types.js';
  * @returns Array of concrete runtime identifiers
  */
 export function getAllRuntimes(): Array<Exclude<Runtime, 'all'>> {
-  return ['claude', 'opencode', 'gemini'];
+  return ['claude', 'codex', 'opencode', 'gemini'];
 }
 
 /**
@@ -27,10 +27,11 @@ export function getAllRuntimes(): Array<Exclude<Runtime, 'all'>> {
  *
  * Environment variable overrides (in priority order):
  * - Claude: CLAUDE_CONFIG_DIR
+ * - Codex: none (Codex skills follow ~/.agents and .agents)
  * - OpenCode: OPENCODE_CONFIG_DIR > XDG_CONFIG_HOME/opencode
  * - Gemini: GEMINI_CONFIG_DIR
  *
- * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @param runtime - Target runtime (claude, codex, opencode, or gemini)
  * @returns Path configuration object with global, local, and settingsFile paths
  */
 export function getRuntimePaths(runtime: Exclude<Runtime, 'all'>): RuntimePaths {
@@ -43,6 +44,16 @@ export function getRuntimePaths(runtime: Exclude<Runtime, 'all'>): RuntimePaths 
       return {
         global: globalPath,
         local: '.claude',
+        settingsFile: path.join(globalPath, 'settings.json'),
+      };
+    }
+
+    case 'codex': {
+      // Codex skills follow ~/.agents and .agents (repo-local)
+      const globalPath = path.join(home, '.agents');
+      return {
+        global: globalPath,
+        local: '.agents',
         settingsFile: path.join(globalPath, 'settings.json'),
       };
     }
@@ -76,7 +87,7 @@ export function getRuntimePaths(runtime: Exclude<Runtime, 'all'>): RuntimePaths 
  * For global location, returns the absolute global path.
  * For local location, returns the local path joined with project root.
  *
- * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @param runtime - Target runtime (claude, codex, opencode, or gemini)
  * @param location - Installation location (global or local)
  * @param projectRoot - Project root directory for local installs (defaults to cwd)
  * @returns Resolved absolute path for installation
@@ -98,11 +109,29 @@ export function resolveInstallPath(
 }
 
 /**
+ * Resolve Codex CLI config directory for global/local scope.
+ *
+ * Codex command rules live under `<config>/rules/*.rules`.
+ * This is separate from ARE skill install paths (`.agents` / `~/.agents`).
+ */
+export function resolveCodexConfigPath(
+  location: Location,
+  projectRoot?: string,
+): string {
+  if (location === 'global') {
+    return path.join(os.homedir(), '.codex');
+  }
+
+  const root = projectRoot || process.cwd();
+  return path.join(root, '.codex');
+}
+
+/**
  * Get the settings file path for a runtime
  *
  * Settings files are used for hook registration (Claude Code uses settings.json).
  *
- * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @param runtime - Target runtime (claude, codex, opencode, or gemini)
  * @returns Absolute path to the settings file
  */
 export function getSettingsPath(runtime: Exclude<Runtime, 'all'>): string {
@@ -112,9 +141,9 @@ export function getSettingsPath(runtime: Exclude<Runtime, 'all'>): string {
 /**
  * Check if a runtime is installed locally in a project.
  *
- * Checks for the presence of the local config directory (e.g., .claude, .opencode, .gemini).
+ * Checks for the presence of the local config directory (e.g., .claude, .agents, .opencode, .gemini).
  *
- * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @param runtime - Target runtime (claude, codex, opencode, or gemini)
  * @param projectRoot - Project root directory to check
  * @returns True if the runtime's local config directory exists
  */
@@ -138,7 +167,7 @@ export async function isRuntimeInstalledLocally(
  *
  * Checks for the presence of the global config directory.
  *
- * @param runtime - Target runtime (claude, opencode, or gemini)
+ * @param runtime - Target runtime (claude, codex, opencode, or gemini)
  * @returns True if the runtime's global config directory exists
  */
 export async function isRuntimeInstalledGlobally(

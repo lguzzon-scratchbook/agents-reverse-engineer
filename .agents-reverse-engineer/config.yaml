@@ -63,6 +63,7 @@ exclude:
     - .agents
     - .planning
     - .claude
+    - .codex
     - .opencode
     - .gemini
     - benchmark
@@ -134,11 +135,12 @@ generation:
 ai:
   # AI CLI backend to use
   # Options: 'claude', 'gemini', 'opencode', 'auto' (auto-detect from PATH)
-  backend: auto
+  backend: codex
 
   # Model identifier (backend-specific)
-  # Examples: "sonnet", "opus", "haiku" (for Claude)
-  model: sonnet
+  # "sonnet", "opus", "haiku" (for Claude)
+  # "gpt-5-nano" (smallest tested Codex model in this environment)
+  model: gpt-5-nano
 
   # Subprocess timeout in milliseconds
   # Default: 300,000ms (5 minutes)

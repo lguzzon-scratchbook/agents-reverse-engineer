@@ -39,7 +39,7 @@ Commands:
   clean [path]      Delete all generated artifacts (.sum, AGENTS.md, etc.)
 
 Install/Uninstall Options:
-  --runtime <name>  Runtime to target (claude, opencode, gemini, all)
+  --runtime <name>  Runtime to target (claude, codex, opencode, gemini, all)
   -g, --global      Target global config directory
   -l, --local       Target current project directory
   --force           Overwrite existing files (init, install, specify, generate)
@@ -51,7 +51,7 @@ General Options:
   --output <path>   Output path (specify: spec file, rebuild: output directory)
   --multi-file      Split specification into multiple files (specify only)
   --model <name>    AI model to use (e.g., sonnet, opus, haiku)
-  --backend <name>  AI backend to use (claude, gemini, opencode, auto)
+  --backend <name>  AI backend to use (claude, codex, gemini, opencode, auto)
   --concurrency <n> Number of concurrent AI calls (default: auto)
   --show-excluded   Show excluded files during discovery
   --fail-fast       Stop on first file analysis failure
@@ -62,6 +62,7 @@ General Options:
 Examples:
   are install
   are install --runtime claude -g
+  are install --runtime codex -g
   are uninstall
   are uninstall --runtime claude -g
   are init

@@ -1,6 +1,6 @@
 {
   "name": "agents-reverse-engineer",
-  "version": "0.8.13",
+  "version": "0.9.9",
   "description": "CLI tool for reverse-engineering codebase documentation for AI agents",
   "type": "module",
   "bin": {
@@ -37,6 +37,7 @@
     "agents",
     "reverse-engineering",
     "claude-code",
+    "codex",
     "gemini-cli",
     "opencode",
     "agents-md",
