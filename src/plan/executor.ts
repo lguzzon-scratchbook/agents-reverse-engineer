@@ -14,8 +14,8 @@ import { extractPlanMetrics } from './metrics.js';
 import { buildPlanningPrompt } from './prompts.js';
 import type { PlanRunResult } from './types.js';
 
-/** Timeout for agentic exploration (10 minutes) */
-const AGENTIC_TIMEOUT_MS = 600_000;
+/** Timeout for agentic exploration (20 minutes) */
+const AGENTIC_TIMEOUT_MS = 1_200_000;
 
 /**
  * Options for executing a plan run.
