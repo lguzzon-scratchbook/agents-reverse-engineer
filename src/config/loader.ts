@@ -212,7 +212,7 @@ export async function writeDefaultConfig(root: string): Promise<void> {
 
   // Generate config content with comments
   const configContent = `# agents-reverse-engineer configuration
-# See: https://github.com/your-org/agents-reverse-engineer
+# See: https://github.com/GeoloeG-IsT/agents-reverse-engineer
 
 # ============================================================================
 # FILE & DIRECTORY EXCLUSIONS
