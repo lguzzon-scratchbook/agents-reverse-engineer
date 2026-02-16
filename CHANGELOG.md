@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-02-16
+
+### Added
+- **`--plan-id` option for `are implement`** — New `--plan-id <id>` flag allows referencing existing plans by their unique ID (shown on `are plan` completion) instead of relying on auto-generated task slugs. Plan list view now displays the ID column instead of date, and comparison output shows a ready-to-copy `are implement` command with the plan ID
+- **Implementation execution skill** — Added `are-implement` slash command skill (`SKILL.md`) for executing A/B implementation comparisons directly from Claude Code
+
+### Changed
+- **Plan list view shows ID instead of date** — The `are plan --list` table now displays the plan ID column (useful for `--plan-id`) replacing the previous date column
+- **Plan comparison footer improved** — Comparison output now displays the plan ID and a suggested `are implement` command for quick follow-up
+
 ## [1.2.1] - 2026-02-16
 
 ### Added
@@ -1025,7 +1035,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.1.4...v1.2.0
 [1.1.4]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.1.3...v1.1.4
