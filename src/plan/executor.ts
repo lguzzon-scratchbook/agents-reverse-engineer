@@ -107,6 +107,21 @@ export async function executePlanRun(options: ExecuteOptions): Promise<PlanRunRe
   } catch (error) {
     // Execution failed but we still have some data
     const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Always log diagnostic info on failure
+    console.error(`[plan] FAILURE DIAGNOSTICS:`);
+    console.error(`[plan]   Exit code: ${result.exitCode}, Signal: ${result.signal}, TimedOut: ${result.timedOut}`);
+    console.error(`[plan]   Duration: ${result.durationMs}ms`);
+    console.error(`[plan]   Stdout length: ${result.stdout.length} chars`);
+    console.error(`[plan]   Stderr length: ${result.stderr.length} chars`);
+    if (result.stderr) {
+      console.error(`[plan]   Stderr (first 1000): ${result.stderr.slice(0, 1000)}`);
+    }
+    if (result.stdout) {
+      console.error(`[plan]   Stdout (last 500): ${result.stdout.slice(-500)}`);
+    }
+    console.error(`[plan]   Parse error: ${errorMessage}`);
+
     return {
       inputTokens: 0,
       outputTokens: 0,
