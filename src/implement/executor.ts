@@ -59,7 +59,7 @@ export async function executeImplementation(options: ExecuteOptions): Promise<Im
     '--output-format', 'json',
     '--no-session-persistence',
     '--disable-slash-commands',
-    '--max-turns', '50',
+    '--max-turns', '100',
   ];
 
   if (model) {
