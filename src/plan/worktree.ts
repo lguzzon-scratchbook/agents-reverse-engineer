@@ -57,6 +57,37 @@ export async function hasUncommittedChanges(projectRoot: string): Promise<boolea
 }
 
 /**
+ * Remove any existing worktrees that reference the given branches.
+ *
+ * Parses `git worktree list --porcelain` to find worktree paths by branch,
+ * then force-removes them so the branches can be safely deleted.
+ */
+async function removeWorktreesForBranches(projectRoot: string, branches: string[]): Promise<void> {
+  const git = simpleGit(projectRoot);
+  const output = await git.raw(['worktree', 'list', '--porcelain']);
+
+  // Parse porcelain output: blocks separated by blank lines,
+  // each block has "worktree <path>" and "branch refs/heads/<name>"
+  let currentPath: string | null = null;
+  for (const line of output.split('\n')) {
+    if (line.startsWith('worktree ')) {
+      currentPath = line.slice('worktree '.length);
+    } else if (line.startsWith('branch refs/heads/') && currentPath) {
+      const branch = line.slice('branch refs/heads/'.length);
+      if (branches.includes(branch)) {
+        try {
+          await git.raw(['worktree', 'remove', '--force', currentPath]);
+        } catch {
+          // Worktree may already be gone
+        }
+      }
+    } else if (line.trim() === '') {
+      currentPath = null;
+    }
+  }
+}
+
+/**
  * Copy untracked .sum files from the project root to the worktree.
  *
  * .sum files are gitignored, so they won't appear in worktrees by default.
@@ -115,7 +146,10 @@ export async function createWorktreePair(
     );
   }
 
-  // Delete old branches if they exist
+  // Remove any existing worktrees referencing these branches before deleting
+  if (withDocsExists || withoutDocsExists) {
+    await removeWorktreesForBranches(projectRoot, [withDocsBranch, withoutDocsBranch]);
+  }
   if (withDocsExists) {
     await git.raw(['branch', '-D', withDocsBranch]);
   }
