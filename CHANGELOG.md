@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-02-17
+
+### Added
+- **Worktree reuse for `are implement`** — When a plan exists, `are implement` now reuses the existing plan branches via `reuseWorktreePair()` instead of recreating them, preserving committed `PLAN.md` files and any prior plan branch state
+- **Plan-less implementation mode** — `are implement` can now run without a prior `are plan`. When no matching plan is found, it creates fresh worktrees from HEAD and strips ARE artifacts from the without-docs worktree, allowing direct task-based A/B comparison
+- **Read plans from worktree branches** — New `readPlanFromWorktree()` function reads `PLAN.md` directly from the worktree branch, with fallback to local disk storage for backward compatibility with plans created before branch commits were introduced
+
+### Changed
+- **Plan storage path on branches** — `commitPlanToWorktree` now writes to `.agents-reverse-engineer/plans/<id>/PLAN.md` (matching the local disk layout) instead of `PLAN.md` at the worktree root, enabling lookup by comparison ID
+- **Implementation prompts adapt to plan availability** — `buildImplementationPrompt` now handles plan-less runs gracefully, instructing the AI to explore the codebase when no plan is provided
+- **Worktree cleanup before branch deletion** — `createWorktreePair` now removes any existing worktrees referencing the target branches before deleting them, preventing "branch is checked out" errors on force-recreate
+
 ## [1.2.4] - 2026-02-17
 
 ### Fixed
@@ -1046,7 +1058,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.4...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.5...HEAD
+[1.2.5]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.1...v1.2.2
