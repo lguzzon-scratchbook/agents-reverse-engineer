@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-02-17
+
+### Fixed
+- **Plan text not committed to worktree branches** — `are plan` created branches (`are/plan/with-docs/<slug>` and `are/plan/without-docs/<slug>`) but never committed the generated plans to them. Plans were only saved to `.agents-reverse-engineer/plans/` on `main`. Now each branch receives a `PLAN.md` commit with the generated plan before worktree cleanup
+
 ## [1.2.3] - 2026-02-17
 
 ### Changed
@@ -1041,7 +1046,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.3...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.0...v1.2.1
