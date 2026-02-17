@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.8] - 2026-02-17
+
+### Changed
+- **Experimental labels for newer commands** — `specify`, `rebuild`, `plan`, `implement`, and `dashboard` are now marked as `(experimental)` in CLI help output, README command tables, slash command documentation, skill descriptions, and installer templates
+- **Expanded Bash permissions** — Added additional allowed Bash commands to `.claude/settings.local.json` for smoother local development
+
 ## [1.2.7] - 2026-02-17
 
 ### Added
@@ -1080,7 +1086,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.7...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.8...HEAD
+[1.2.8]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.7...v1.2.8
 [1.2.7]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.6...v1.2.7
 [1.2.6]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.4...v1.2.5
