@@ -39,8 +39,8 @@ Sleep 4s
 
 # Select "Local" (second option — press Down)
 Down
-Sleep 1s
+Sleep 4s
 Enter
 
 # Wait for installation to complete and results to display
-Sleep 5s
+Sleep 7s
