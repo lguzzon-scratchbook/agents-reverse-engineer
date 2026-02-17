@@ -123,7 +123,7 @@ npx agents-reverse-engineer update ./my-project --concurrency 3
 
 ---
 
-### `/are-specify`
+### `/are-specify` (Experimental)
 Generate a project specification from AGENTS.md documentation.
 
 Collects all AGENTS.md files, synthesizes them via AI, and writes a comprehensive project specification. Auto-runs `generate` if no AGENTS.md files exist.
@@ -153,7 +153,7 @@ npx agents-reverse-engineer specify --multi-file
 
 ---
 
-### `/are-rebuild`
+### `/are-rebuild` (Experimental)
 Reconstruct a project from specification documents.
 
 Reads spec files from `specs/`, partitions them into ordered rebuild units, processes each via AI, and writes generated source files to an output directory. Supports checkpoint-based session continuity for resumable long-running rebuilds.
@@ -217,7 +217,7 @@ npx agents-reverse-engineer clean
 
 ---
 
-### `/are-dashboard`
+### `/are-dashboard` (Experimental)
 Show telemetry dashboard with cost analysis, token usage, and trace timelines.
 
 **Options:**

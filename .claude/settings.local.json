@@ -23,7 +23,8 @@
       "Bash(chmod:*)",
       "Bash(~/.local/bin/ttyd:*)",
       "Bash(pip3 install:*)",
-      "Bash(export PATH=\"$HOME/.local/bin:/tmp/are-demo-bin:$PATH\")"
+      "Bash(export PATH=\"$HOME/.local/bin:/tmp/are-demo-bin:$PATH\")",
+      "Bash(npx agents-reverse-engineer@1.2.6 update:*)"
     ]
   }
 }
