@@ -21,6 +21,7 @@ import {
   slugify,
   createWorktreePair,
   hasUncommittedChanges,
+  commitPlanToWorktree,
   stripArtifacts,
   executePlanRun,
   evaluatePlans,
@@ -185,6 +186,10 @@ export async function planCommand(
     // Extract plan texts for storage
     const withDocsPlanText = withDocsResult.planText || `[Failed: ${withDocsResult.error}]`;
     const withoutDocsPlanText = withoutDocsResult.planText || `[Failed: ${withoutDocsResult.error}]`;
+
+    // Commit plan texts to worktree branches (before cleanup removes them)
+    await commitPlanToWorktree(worktrees.withDocsPath, withDocsPlanText);
+    await commitPlanToWorktree(worktrees.withoutDocsPath, withoutDocsPlanText);
 
     // Run evaluation if requested
     let evaluation = null;

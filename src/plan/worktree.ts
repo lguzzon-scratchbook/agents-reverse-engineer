@@ -9,7 +9,7 @@
  */
 
 import { simpleGit } from 'simple-git';
-import { copyFile, mkdir } from 'node:fs/promises';
+import { copyFile, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
@@ -162,4 +162,23 @@ export async function createWorktreePair(
     withoutDocsBranch,
     cleanup,
   };
+}
+
+/**
+ * Commit a PLAN.md file to a worktree branch.
+ *
+ * Writes the plan text as `PLAN.md` at the worktree root and commits it,
+ * so the plan is preserved on the branch after the worktree is removed.
+ *
+ * @param worktreePath - Absolute path to the worktree
+ * @param planText - The plan markdown content
+ */
+export async function commitPlanToWorktree(
+  worktreePath: string,
+  planText: string,
+): Promise<void> {
+  await writeFile(path.join(worktreePath, 'PLAN.md'), planText, 'utf-8');
+  const git = simpleGit(worktreePath);
+  await git.add('PLAN.md');
+  await git.commit('chore(are-plan): save generated plan');
 }
