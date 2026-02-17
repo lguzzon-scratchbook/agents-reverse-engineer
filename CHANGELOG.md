@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.10] - 2026-02-17
+
+### Added
+- **Worktree cleanup in `are clean`** — The clean command now detects and removes ARE-related git worktrees (both registered and orphaned `/tmp` directories), with dry-run support and summary counts
+- **Worktree path output after plan/implement** — `are plan` and `are implement` now print worktree paths at completion for easy inspection of results
+
+### Changed
+- **Worktrees preserved after plan/implement** — Worktrees are no longer automatically cleaned up on completion or abort; use `are clean` to remove them when done inspecting
+- **Claude backend handles additional error subtypes** — Response schema now accepts `error_max_turns`, `error_during_execution`, `error_max_budget_usd`, and `error_max_structured_output_retries` subtypes, with `result` field treated as optional to prevent crashes on error responses
+
 ## [1.2.9] - 2026-02-17
 
 ### Added
@@ -1102,7 +1112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.9...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.10...HEAD
+[1.2.10]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.9...v1.2.10
 [1.2.9]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.8...v1.2.9
 [1.2.8]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.7...v1.2.8
 [1.2.7]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.6...v1.2.7
