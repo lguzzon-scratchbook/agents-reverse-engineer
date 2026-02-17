@@ -22,7 +22,14 @@ import {
   loadPlanText,
   listComparisons as listPlanComparisons,
 } from '../plan/storage.js';
-import { slugify, createWorktreePair } from '../plan/index.js';
+import {
+  slugify,
+  createWorktreePair,
+  reuseWorktreePair,
+  readPlanFromWorktree,
+  stripArtifacts,
+  hasUncommittedChanges,
+} from '../plan/index.js';
 import {
   executeImplementation,
   evaluateImplementations,
@@ -79,7 +86,8 @@ export async function implementCommand(
   const backend = await resolveBackend(registry, backendName);
   const model = options.model ?? config.ai.model;
 
-  // Resolve plan: by --plan-id (exact ID), by --task-slug, or by slugified task
+  // Resolve plan: by --plan-id, by --task-slug, or by slugified task
+  // When no plan is found for a task, we proceed plan-less (fresh worktrees).
   let planMatch;
   if (options.planId) {
     planMatch = await loadPlanById(projectRoot, options.planId);
@@ -100,37 +108,25 @@ export async function implementCommand(
     logger.info('       are implement --show <id>');
     process.exit(1);
   } else {
-    const taskSlug = options.taskSlug || slugify(task);
+    // Try to find an existing plan; if none exists, proceed without one
+    const taskSlugCandidate = options.taskSlug || slugify(task);
     const planComparisons = await listPlanComparisons(projectRoot);
-    planMatch = planComparisons.find(c => c.taskSlug === taskSlug);
-    if (!planMatch) {
-      logger.error(`No plan found for task slug "${taskSlug}".`);
-      logger.info('Run `are plan "<task>"` first, or use --plan-id <id>.');
-      process.exit(1);
-    }
+    planMatch = planComparisons.find(c => c.taskSlug === taskSlugCandidate) ?? null;
   }
 
-  const taskSlug = planMatch.taskSlug;
+  const taskSlug = planMatch ? planMatch.taskSlug : (options.taskSlug || slugify(task));
   const withDocsBranch = `are/plan/with-docs/${taskSlug}`;
   const withoutDocsBranch = `are/plan/without-docs/${taskSlug}`;
-
-  const withDocsPlan = await loadPlanText(projectRoot, planMatch.id, 'with-docs');
-  const withoutDocsPlan = await loadPlanText(projectRoot, planMatch.id, 'without-docs');
-
-  if (!withDocsPlan || !withoutDocsPlan) {
-    logger.error('Plan text files not found. The plan comparison may be corrupted.');
-    logger.info('Run `are plan "<task>"` again to regenerate.');
-    process.exit(1);
-  }
 
   // Dry run: show what would happen
   if (options.dryRun) {
     console.log(pc.bold('=== Implementation Comparison (dry run) ==='));
     console.log(`Task: "${task}"`);
     console.log(`Slug: ${taskSlug}`);
+    console.log(`Plan: ${planMatch ? planMatch.id : 'none (plan-less run)'}`);
     console.log(`Model: ${model}  Backend: ${backend.name}`);
     console.log('');
-    console.log('Would execute implementation in branches:');
+    console.log(`Would ${planMatch ? 'reuse existing' : 'create new'} branches:`);
     console.log(`  ${withDocsBranch}`);
     console.log(`  ${withoutDocsBranch}`);
     if (options.eval) {
@@ -144,6 +140,13 @@ export async function implementCommand(
     return;
   }
 
+  // Check for uncommitted changes (plan-less only — plan branches are already frozen)
+  if (!planMatch && await hasUncommittedChanges(projectRoot)) {
+    logger.warn('Uncommitted changes detected. Implementation will compare the last committed state.');
+    logger.warn('Consider committing first for accurate results.');
+    console.log('');
+  }
+
   const startTime = new Date().toISOString();
 
   // Render header
@@ -152,17 +155,48 @@ export async function implementCommand(
     withoutDocs: withoutDocsBranch,
   });
 
-  // Re-create worktrees from existing plan branches
   let worktrees;
-  try {
-    worktrees = await createWorktreePair(projectRoot, taskSlug, false);
-  } catch (error) {
-    // Branches may already exist from the plan — try with force
+  let withDocsPlan: string | undefined;
+  let withoutDocsPlan: string | undefined;
+
+  if (planMatch) {
+    // Reuse existing plan branches (preserving committed PLAN.md files)
     try {
-      worktrees = await createWorktreePair(projectRoot, taskSlug, true);
-    } catch (retryError) {
-      logger.error((retryError as Error).message);
+      worktrees = await reuseWorktreePair(projectRoot, taskSlug);
+    } catch (error) {
+      logger.error((error as Error).message);
       process.exit(1);
+    }
+
+    // Read plans from the worktree branches, fall back to disk storage
+    withDocsPlan = await readPlanFromWorktree(worktrees.withDocsPath, planMatch.id) ?? undefined;
+    withoutDocsPlan = await readPlanFromWorktree(worktrees.withoutDocsPath, planMatch.id) ?? undefined;
+
+    if (!withDocsPlan || !withoutDocsPlan) {
+      // Backward compat: try disk storage for plans created before branch commits
+      withDocsPlan = withDocsPlan ?? await loadPlanText(projectRoot, planMatch.id, 'with-docs') ?? undefined;
+      withoutDocsPlan = withoutDocsPlan ?? await loadPlanText(projectRoot, planMatch.id, 'without-docs') ?? undefined;
+    }
+
+    if (!withDocsPlan || !withoutDocsPlan) {
+      await worktrees.cleanup();
+      logger.error('Plan text not found on branches or in local storage.');
+      logger.info('Run `are plan "<task>"` again to regenerate.');
+      process.exit(1);
+    }
+  } else {
+    // Plan-less: create fresh worktrees from HEAD
+    try {
+      worktrees = await createWorktreePair(projectRoot, taskSlug, options.force ?? false);
+    } catch (error) {
+      logger.error((error as Error).message);
+      process.exit(1);
+    }
+
+    // Strip ARE artifacts from "without-docs" worktree
+    const removedCount = await stripArtifacts(worktrees.withoutDocsPath);
+    if (options.debug) {
+      console.error(`[implement] Stripped ${removedCount} artifacts from without-docs worktree`);
     }
   }
 

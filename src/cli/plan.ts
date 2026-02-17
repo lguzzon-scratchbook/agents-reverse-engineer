@@ -120,6 +120,7 @@ export async function planCommand(
   }
 
   const startTime = new Date().toISOString();
+  const comparisonId = startTime.replace(/[:.]/g, '-');
 
   // Render header
   renderHeader(task, model, backend.name, {
@@ -188,8 +189,8 @@ export async function planCommand(
     const withoutDocsPlanText = withoutDocsResult.planText || `[Failed: ${withoutDocsResult.error}]`;
 
     // Commit plan texts to worktree branches (before cleanup removes them)
-    await commitPlanToWorktree(worktrees.withDocsPath, withDocsPlanText);
-    await commitPlanToWorktree(worktrees.withoutDocsPath, withoutDocsPlanText);
+    await commitPlanToWorktree(worktrees.withDocsPath, withDocsPlanText, comparisonId);
+    await commitPlanToWorktree(worktrees.withoutDocsPath, withoutDocsPlanText, comparisonId);
 
     // Run evaluation if requested
     let evaluation = null;
@@ -229,7 +230,6 @@ export async function planCommand(
     };
 
     // Build comparison record
-    const comparisonId = startTime.replace(/[:.]/g, '-');
     const comparison: PlanComparison = {
       id: comparisonId,
       startTime,

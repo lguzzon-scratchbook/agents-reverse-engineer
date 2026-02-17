@@ -12,7 +12,7 @@
 export { slugify } from './slugify.js';
 export { buildPlanningPrompt, buildEvaluatorPrompt } from './prompts.js';
 export { extractPlanMetrics } from './metrics.js';
-export { createWorktreePair, hasUncommittedChanges, commitPlanToWorktree } from './worktree.js';
+export { createWorktreePair, reuseWorktreePair, hasUncommittedChanges, commitPlanToWorktree, readPlanFromWorktree } from './worktree.js';
 export { stripArtifacts } from './strip-artifacts.js';
 export { executePlanRun, extractPlanText } from './executor.js';
 export { evaluatePlans } from './evaluator.js';

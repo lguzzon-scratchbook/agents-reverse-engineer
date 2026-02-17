@@ -23,8 +23,8 @@ const IMPLEMENTATION_TIMEOUT_MS = 2_400_000;
 export interface ExecuteOptions {
   /** The task description */
   task: string;
-  /** Plan text from the previous `are plan` run */
-  planText: string;
+  /** Plan text from the previous `are plan` run (omit for plan-less runs) */
+  planText?: string;
   /** Working directory (worktree path) */
   cwd: string;
   /** Model to use */

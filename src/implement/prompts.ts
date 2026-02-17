@@ -11,16 +11,17 @@
  * Build the prompt for an agentic AI implementation run.
  *
  * Asks the AI to implement a task following the provided plan text,
- * optionally including test/build/lint requirements.
+ * optionally including test/build/lint requirements. When no plan is
+ * provided, the AI implements from the task description alone.
  *
  * @param task - The original task description
- * @param planText - The plan markdown from `are plan`
+ * @param planText - The plan markdown from `are plan` (omit for plan-less runs)
  * @param options - Optional quality gates
  * @returns Prompt string for the Claude CLI
  */
 export function buildImplementationPrompt(
   task: string,
-  planText: string,
+  planText: string | undefined,
   options: { runTests?: boolean; runBuild?: boolean; runLint?: boolean } = {},
 ): string {
   const testRequirement = options.runTests
@@ -33,20 +34,16 @@ export function buildImplementationPrompt(
     ? '\n- Fix all lint errors and warnings'
     : '';
 
-  return `You are a software engineer. Implement the following task based on the provided implementation plan.
+  const planSection = planText
+    ? `\n<plan>\n${planText}\n</plan>\n\n# Requirements\nYour implementation should:\n- Follow the plan exactly as specified\n- Create or modify files as outlined in the plan`
+    : `\n# Requirements\nYour implementation should:\n- Explore the codebase to understand the architecture before making changes\n- Create or modify files as needed to complete the task`;
+
+  return `You are a software engineer. Implement the following task${planText ? ' based on the provided implementation plan' : ''}.
 
 <task>
 ${task}
 </task>
-
-<plan>
-${planText}
-</plan>
-
-# Requirements
-Your implementation should:
-- Follow the plan exactly as specified
-- Create or modify files as outlined in the plan
+${planSection}
 - Include proper error handling and edge case coverage
 - Write clean, maintainable code${testRequirement}${buildRequirement}${lintRequirement}
 - Make atomic commits with clear commit messages
@@ -57,7 +54,7 @@ Implement the task step by step, creating/modifying files as needed. After imple
 2. Run any required validation (tests, build, lint)
 3. Make a final commit summarizing the implementation
 
-Focus on quality, completeness, and adherence to the plan.`;
+Focus on quality, completeness, and adherence to ${planText ? 'the plan' : 'the task requirements'}.`;
 }
 
 /**

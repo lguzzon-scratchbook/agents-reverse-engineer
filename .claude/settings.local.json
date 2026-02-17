@@ -106,7 +106,8 @@
       "WebFetch(domain:platform.openai.com)",
       "Bash(command -v:*)",
       "Bash(git worktree:*)",
-      "Bash(ps:*)"
+      "Bash(ps:*)",
+      "Bash(git -C /home/pascal/wks/agents-reverse-engineer worktree list)"
     ]
   }
 }

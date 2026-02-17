@@ -9,7 +9,7 @@
  */
 
 import { simpleGit } from 'simple-git';
-import { copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
@@ -201,18 +201,134 @@ export async function createWorktreePair(
 /**
  * Commit a PLAN.md file to a worktree branch.
  *
- * Writes the plan text as `PLAN.md` at the worktree root and commits it,
- * so the plan is preserved on the branch after the worktree is removed.
+ * Writes the plan text as `.agents-reverse-engineer/plans/<id>/PLAN.md`
+ * in the worktree and commits it, so the plan is preserved on the branch
+ * after the worktree is removed. This allows `are implement` to read the
+ * plan directly from the branch without needing local disk storage.
  *
  * @param worktreePath - Absolute path to the worktree
  * @param planText - The plan markdown content
+ * @param comparisonId - The comparison ID (timestamp-based) for the plan directory
  */
 export async function commitPlanToWorktree(
   worktreePath: string,
   planText: string,
+  comparisonId: string,
 ): Promise<void> {
-  await writeFile(path.join(worktreePath, 'PLAN.md'), planText, 'utf-8');
+  const planDir = path.join(worktreePath, '.agents-reverse-engineer', 'plans', comparisonId);
+  await mkdir(planDir, { recursive: true });
+  const planPath = path.join(planDir, 'PLAN.md');
+  await writeFile(planPath, planText, 'utf-8');
   const git = simpleGit(worktreePath);
-  await git.add('PLAN.md');
+  await git.add(planPath);
   await git.commit('chore(are-plan): save generated plan');
+}
+
+/**
+ * Create worktrees from existing branches without recreating them.
+ *
+ * Used by `are implement` to attach to branches created by `are plan`,
+ * preserving any commits (e.g. PLAN.md) already on those branches.
+ *
+ * @param projectRoot - The project root directory
+ * @param taskSlug - Slugified task name for branch naming
+ * @returns WorktreePair with paths, branch names, and cleanup function
+ * @throws If branches do not exist
+ */
+export async function reuseWorktreePair(
+  projectRoot: string,
+  taskSlug: string,
+): Promise<WorktreePair> {
+  const git = simpleGit(projectRoot);
+
+  const withDocsBranch = `are/plan/with-docs/${taskSlug}`;
+  const withoutDocsBranch = `are/plan/without-docs/${taskSlug}`;
+
+  // Verify both branches exist
+  const withDocsExists = await branchExists(projectRoot, withDocsBranch);
+  const withoutDocsExists = await branchExists(projectRoot, withoutDocsBranch);
+
+  if (!withDocsExists || !withoutDocsExists) {
+    throw new Error(
+      `Plan branches not found for task slug "${taskSlug}".\n` +
+      `  Expected: ${withDocsBranch}\n` +
+      `  Expected: ${withoutDocsBranch}\n` +
+      `Run \`are plan "<task>"\` first to create them.`,
+    );
+  }
+
+  // Remove any stale worktrees referencing these branches
+  await removeWorktreesForBranches(projectRoot, [withDocsBranch, withoutDocsBranch]);
+
+  // Create temporary worktree base directory
+  const tmpId = randomBytes(6).toString('hex');
+  const tmpBase = path.join(tmpdir(), `are-impl-${tmpId}`);
+  const withDocsPath = path.join(tmpBase, 'with-docs');
+  const withoutDocsPath = path.join(tmpBase, 'without-docs');
+
+  // Create worktrees from existing branches (preserving commits)
+  await git.raw(['worktree', 'add', withDocsPath, withDocsBranch]);
+  await git.raw(['worktree', 'add', withoutDocsPath, withoutDocsBranch]);
+
+  // Build cleanup function
+  const cleanup = async () => {
+    const cleanupGit = simpleGit(projectRoot);
+    try {
+      await cleanupGit.raw(['worktree', 'remove', '--force', withDocsPath]);
+    } catch {
+      // Worktree may already be removed
+    }
+    try {
+      await cleanupGit.raw(['worktree', 'remove', '--force', withoutDocsPath]);
+    } catch {
+      // Worktree may already be removed
+    }
+  };
+
+  return {
+    withDocsPath,
+    withoutDocsPath,
+    withDocsBranch,
+    withoutDocsBranch,
+    cleanup,
+  };
+}
+
+/**
+ * Read a PLAN.md file from a worktree's `.agents-reverse-engineer/plans/` directory.
+ *
+ * Searches for the plan by comparison ID, or finds the first available plan
+ * directory if no ID is given.
+ *
+ * @param worktreePath - Absolute path to the worktree
+ * @param comparisonId - Optional comparison ID; if omitted, finds the first plan
+ * @returns The plan markdown text, or null if not found
+ */
+export async function readPlanFromWorktree(
+  worktreePath: string,
+  comparisonId?: string,
+): Promise<string | null> {
+  const plansBase = path.join(worktreePath, '.agents-reverse-engineer', 'plans');
+
+  if (comparisonId) {
+    try {
+      return await readFile(path.join(plansBase, comparisonId, 'PLAN.md'), 'utf-8');
+    } catch {
+      return null;
+    }
+  }
+
+  // No ID given — find first plan directory
+  try {
+    const entries = await fg.glob('*/PLAN.md', { cwd: plansBase, onlyFiles: true });
+    if (entries.length > 0) {
+      // Sort descending to get newest first
+      entries.sort().reverse();
+      return await readFile(path.join(plansBase, entries[0]), 'utf-8');
+    }
+  } catch {
+    // Directory may not exist
+  }
+
+  return null;
 }
