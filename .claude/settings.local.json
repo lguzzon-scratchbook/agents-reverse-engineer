@@ -3,7 +3,10 @@
     "allow": [
       "Bash(node -p:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git tag:*)",
+      "Bash(git push:*)",
+      "Bash(gh release create:*)"
     ]
   }
 }
