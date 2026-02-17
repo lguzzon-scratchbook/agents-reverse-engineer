@@ -18,9 +18,7 @@
 npx agents-reverse-engineer@latest
 ```
 
-**Interactive installer with runtime and location selection.**
-
-**Works on Mac, Windows, and Linux.**
+<img src="assets/demo-install.gif" alt="ARE interactive installer demo" width="700">
 
 <br>
 

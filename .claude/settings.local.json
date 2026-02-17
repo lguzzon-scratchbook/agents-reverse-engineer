@@ -8,7 +8,22 @@
       "Bash(git push:*)",
       "Bash(gh release create:*)",
       "Bash(npm run build:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(vhs:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(sudo mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(sudo gpg:*)",
+      "Bash(sudo tee:*)",
+      "Bash(sudo apt update:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(go version:*)",
+      "Bash(python3:*)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
+      "Bash(chmod:*)",
+      "Bash(~/.local/bin/ttyd:*)",
+      "Bash(pip3 install:*)",
+      "Bash(export PATH=\"$HOME/.local/bin:/tmp/are-demo-bin:$PATH\")"
     ]
   }
 }
