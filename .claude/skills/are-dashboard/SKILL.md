@@ -1,6 +1,6 @@
 ---
 name: are-dashboard
-description: Show telemetry dashboard (costs, tokens, traces)
+description: Show telemetry dashboard (costs, tokens, traces) (experimental)
 disable-model-invocation: true
 ---
 

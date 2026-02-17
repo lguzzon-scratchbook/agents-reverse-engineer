@@ -1,6 +1,6 @@
 ---
 name: are-implement
-description: Execute implementation with and without ARE documentation
+description: Execute implementation with and without ARE documentation (experimental)
 disable-model-invocation: true
 ---
 

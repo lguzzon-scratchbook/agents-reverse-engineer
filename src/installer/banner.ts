@@ -181,7 +181,7 @@ export function showNextSteps(runtime: string, filesCreated: number, layout?: Sp
     layout.appendRight('  3. Run ' + pc.cyan('/are-discover') + ' to create the generation plan');
     layout.appendRight('  4. Run ' + pc.cyan('/are-generate') + ' to generate documentation');
     layout.appendRight('  5. Run ' + pc.cyan('/are-update') + ' to update documentation after changes');
-    layout.appendRight('  6. Run ' + pc.cyan('/are-specify') + ' to generate a specification document');
+    layout.appendRight('  6. Run ' + pc.cyan('/are-specify') + ' to generate a specification document ' + pc.dim('(experimental)'));
     layout.appendRight('  7. Run ' + pc.cyan('/are-clean') + ' to remove all generated artifacts');
     layout.appendRight('');
     layout.appendRight(pc.dim('Docs: https://github.com/GeoloeG-IsT/agents-reverse-engineer'));
@@ -198,7 +198,7 @@ export function showNextSteps(runtime: string, filesCreated: number, layout?: Sp
   console.log('  3. Run ' + pc.cyan('/are-discover') + ' to create the generation plan');
   console.log('  4. Run ' + pc.cyan('/are-generate') + ' to generate documentation');
   console.log('  5. Run ' + pc.cyan('/are-update') + ' to update documentation after changes');
-  console.log('  6. Run ' + pc.cyan('/are-specify') + ' to generate a specification document');
+  console.log('  6. Run ' + pc.cyan('/are-specify') + ' to generate a specification document ' + pc.dim('(experimental)'));
   console.log('  7. Run ' + pc.cyan('/are-clean') + ' to remove all generated artifacts');
   console.log();
   console.log(pc.dim('Docs: https://github.com/GeoloeG-IsT/agents-reverse-engineer'));

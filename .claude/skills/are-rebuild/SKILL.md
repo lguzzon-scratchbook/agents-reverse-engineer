@@ -1,6 +1,6 @@
 ---
 name: are-rebuild
-description: Reconstruct project from specification documents
+description: Reconstruct project from specification documents (experimental)
 disable-model-invocation: true
 ---
 

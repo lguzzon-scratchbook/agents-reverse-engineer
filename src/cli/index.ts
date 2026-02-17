@@ -7,7 +7,7 @@
  *   discover [path]   Discover files to analyze
  *   generate [path]   Generate documentation plan
  *   update [path]     Update docs incrementally
- *   specify [path]    Generate project specification from AGENTS.md docs
+ *   specify [path]    Generate project specification from AGENTS.md docs (experimental)
  *   clean [path]      Delete all generated artifacts
  */
 
@@ -39,12 +39,12 @@ Commands:
   discover [path]   Discover files to analyze (default: current directory)
   generate [path]   Generate documentation plan (default: current directory)
   update [path]     Update docs incrementally (default: current directory)
-  specify [path]    Generate project specification from AGENTS.md docs
-  rebuild [path]    Reconstruct project from specification
+  specify [path]    Generate project specification from AGENTS.md docs (experimental)
+  rebuild [path]    Reconstruct project from specification (experimental)
   clean [path]      Delete all generated artifacts (.sum, AGENTS.md, etc.)
-  plan <task>       Compare AI planning quality with/without ARE docs
-  implement <task>  Execute implementation with/without ARE docs
-  dashboard [path]  Show telemetry dashboard (costs, tokens, traces)
+  plan <task>       Compare AI planning quality with/without ARE docs (experimental)
+  implement <task>  Execute implementation with/without ARE docs (experimental)
+  dashboard [path]  Show telemetry dashboard (costs, tokens, traces) (experimental)
 
 Install/Uninstall Options:
   --runtime <name>  Runtime to target (claude, codex, opencode, gemini, all)

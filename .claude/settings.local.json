@@ -6,7 +6,9 @@
       "Bash(git commit:*)",
       "Bash(git tag:*)",
       "Bash(git push:*)",
-      "Bash(gh release create:*)"
+      "Bash(gh release create:*)",
+      "Bash(npm run build:*)",
+      "Bash(node:*)"
     ]
   }
 }

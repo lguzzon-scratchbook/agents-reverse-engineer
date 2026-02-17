@@ -200,7 +200,7 @@ Only regenerates documentation for files that changed since last run.
 
 ---
 
-### 6. Generate Specification
+### 6. Generate Specification (Experimental)
 
 ```
 /are-specify
@@ -210,7 +210,7 @@ Synthesizes all AGENTS.md documentation into a single project specification docu
 
 ---
 
-### 7. Plan Comparison (A/B Test)
+### 7. Plan Comparison (A/B Test) (Experimental)
 
 ```
 are plan "Add user authentication with JWT"
@@ -220,7 +220,7 @@ Runs AI planning **twice** on the same task — once with ARE documentation and 
 
 ---
 
-### 8. Implement Comparison (A/B Test)
+### 8. Implement Comparison (A/B Test) (Experimental)
 
 ```
 are implement "Add user authentication with JWT"
@@ -249,12 +249,12 @@ are implement --show 2026-02-16         # View a comparison
 | `are discover`                  | Scan files and create GENERATION-PLAN.md         |
 | `are generate`                  | Generate all documentation                       |
 | `are update`                    | Update changed files only                        |
-| `are specify`                   | Generate project specification                   |
-| `are rebuild`                   | Reconstruct project from specs                   |
-| `are plan "<task>"`             | Compare AI planning with vs without docs         |
-| `are implement "<task>"`        | Compare AI implementation with vs without docs   |
+| `are specify`                   | Generate project specification (experimental)                   |
+| `are rebuild`                   | Reconstruct project from specs (experimental)                   |
+| `are plan "<task>"`             | Compare AI planning with vs without docs (experimental)         |
+| `are implement "<task>"`        | Compare AI implementation with vs without docs (experimental)   |
 | `are clean`                     | Remove all generated docs                        |
-| `are dashboard`                 | Show telemetry dashboard (costs, tokens, traces) |
+| `are dashboard`                 | Show telemetry dashboard (costs, tokens, traces) (experimental) |
 
 **Runtimes:** `claude`, `codex`, `opencode`, `gemini`, `all`
 
@@ -293,16 +293,16 @@ are implement --show 2026-02-16         # View a comparison
 | `/are-discover`  | Rediscover and regenerate plan              | Claude, Codex, OpenCode, Gemini |
 | `/are-generate`  | Generate all documentation                  | Claude, Codex, OpenCode, Gemini |
 | `/are-update`    | Update changed files only                   | Claude, Codex, OpenCode, Gemini |
-| `/are-specify`   | Generate project specification              | Claude, Codex, OpenCode, Gemini |
-| `/are-rebuild`   | Reconstruct project from specs              | Claude, Codex, OpenCode, Gemini |
-| `/are-plan`      | Compare planning with vs without docs       | Claude, Codex, OpenCode, Gemini |
-| `/are-implement` | Compare implementation with vs without docs | Claude, Codex, OpenCode, Gemini |
-| `/are-clean`     | Remove all generated docs                   | Claude, Codex, OpenCode, Gemini |
-| `/are-dashboard` | Show telemetry dashboard                    | Claude, Codex, OpenCode, Gemini |
+| `/are-specify`   | Generate project specification (experimental)              | Claude, Codex, OpenCode, Gemini |
+| `/are-rebuild`   | Reconstruct project from specs (experimental)              | Claude, Codex, OpenCode, Gemini |
+| `/are-plan`      | Compare planning with vs without docs (experimental)       | Claude, Codex, OpenCode, Gemini |
+| `/are-implement` | Compare implementation with vs without docs (experimental) | Claude, Codex, OpenCode, Gemini |
+| `/are-clean`     | Remove all generated docs                                  | Claude, Codex, OpenCode, Gemini |
+| `/are-dashboard` | Show telemetry dashboard (experimental)                    | Claude, Codex, OpenCode, Gemini |
 
 ---
 
-## Telemetry Dashboard
+## Telemetry Dashboard (Experimental)
 
 ARE logs telemetry for every run (costs, tokens, latency, traces). Use the dashboard to analyze costs and performance.
 

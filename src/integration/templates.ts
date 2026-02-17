@@ -188,7 +188,7 @@ Report number of files deleted.
   },
 
   specify: {
-    description: 'Generate project specification from AGENTS.md docs',
+    description: 'Generate project specification from AGENTS.md docs (experimental)',
     argumentHint: '[path] [--dry-run] [--output <path>] [--multi-file] [--force] [--debug] [--trace]',
     content: `Generate a project specification from existing AGENTS.md documentation.
 
@@ -230,7 +230,7 @@ If no AGENTS.md files exist, it will auto-run \`generate\` first.
   },
 
   rebuild: {
-    description: 'Reconstruct project from specification documents',
+    description: 'Reconstruct project from specification documents (experimental)',
     argumentHint: '[path] [--dry-run] [--output <path>] [--force] [--concurrency N] [--fail-fast] [--debug] [--trace]',
     content: `Reconstruct a project from specification documents using agents-reverse-engineer.
 
@@ -274,7 +274,7 @@ This reads spec files from \`specs/\`, partitions them into ordered rebuild unit
   },
 
   dashboard: {
-    description: 'Show telemetry dashboard (costs, tokens, traces)',
+    description: 'Show telemetry dashboard (costs, tokens, traces) (experimental)',
     argumentHint: '[path] [--run <id>] [--trace <id>] [--trends] [--format <table|json|html>]',
     content: `Show the ARE telemetry dashboard with cost analysis, token usage, and trace timelines.
 
@@ -315,7 +315,7 @@ This reads spec files from \`specs/\`, partitions them into ordered rebuild unit
   },
 
   plan: {
-    description: 'Compare AI planning quality with and without ARE documentation',
+    description: 'Compare AI planning quality with and without ARE documentation (experimental)',
     argumentHint: '<task> [path] [--eval] [--model <name>] [--dry-run] [--list] [--show <id>]',
     content: `Compare AI planning quality with and without ARE documentation.
 
@@ -357,7 +357,7 @@ The comparison measures how much ARE documentation improves AI planning quality.
   },
 
   implement: {
-    description: 'Execute implementation with and without ARE documentation',
+    description: 'Execute implementation with and without ARE documentation (experimental)',
     argumentHint: '<task> [path] [--eval] [--model <name>] [--dry-run] [--list] [--show <id>] [--run-tests] [--run-build] [--run-lint]',
     content: `Execute the implementation phase with and without ARE documentation to measure impact.
 
@@ -529,7 +529,7 @@ npx agents-reverse-engineer update ./my-project --concurrency 3
 
 ---
 
-### \`COMMAND_PREFIXspecify\`
+### \`COMMAND_PREFIXspecify\` (Experimental)
 Generate a project specification from AGENTS.md documentation.
 
 Collects all AGENTS.md files, synthesizes them via AI, and writes a comprehensive project specification. Auto-runs \`generate\` if no AGENTS.md files exist.
@@ -559,7 +559,7 @@ npx agents-reverse-engineer specify --multi-file
 
 ---
 
-### \`COMMAND_PREFIXrebuild\`
+### \`COMMAND_PREFIXrebuild\` (Experimental)
 Reconstruct a project from specification documents.
 
 Reads spec files from \`specs/\`, partitions them into ordered rebuild units, processes each via AI, and writes generated source files to an output directory. Supports checkpoint-based session continuity for resumable long-running rebuilds.
@@ -623,7 +623,7 @@ npx agents-reverse-engineer clean
 
 ---
 
-### \`COMMAND_PREFIXdashboard\`
+### \`COMMAND_PREFIXdashboard\` (Experimental)
 Show telemetry dashboard with cost analysis, token usage, and trace timelines.
 
 **Options:**
