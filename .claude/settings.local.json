@@ -1,5 +1,9 @@
 {
   "permissions": {
-    "allow": []
+    "allow": [
+      "Bash(node -p:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
   }
 }

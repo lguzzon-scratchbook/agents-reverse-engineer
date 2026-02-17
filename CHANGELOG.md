@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.7] - 2026-02-17
+
+### Added
+- **Blog post 02** — Published second blog post to the project documentation site
+
+### Changed
+- **README.md improvements** — Added Codex badge, expanded "Why This Exists" section to contrast with shallow built-in init commands, highlighted incremental update capability, and improved table formatting
+- **Cleaned up local settings** — Removed excessive permission entries from `.claude/settings.local.json`
+
+### Fixed
+- **Installer left-pane text alignment** — Centered the version string and tagline in the split-pane installer layout for better visual balance
+
 ## [1.2.6] - 2026-02-17
 
 ### Added
@@ -1068,7 +1080,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.6...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.7...HEAD
+[1.2.7]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.6...v1.2.7
 [1.2.6]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.3...v1.2.4
