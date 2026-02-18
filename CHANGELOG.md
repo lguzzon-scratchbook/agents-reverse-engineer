@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.11] - 2026-02-18
+
+### Changed
+- **Per-worktree baseline refs for implementation metrics** — `are implement` now captures each worktree's HEAD individually after artifact stripping, instead of using the merge-base between branches, ensuring metrics measure only actual AI implementation changes
+- **OpenCode cost calculation uses shared pricing module** — Removed duplicated pricing constants and `calculateCostFromTokens` from the OpenCode backend, now imports `getModelPricing` and `computeCost` from `cost-calculator.ts` for single-source-of-truth pricing
+
 ## [1.2.10] - 2026-02-17
 
 ### Added
@@ -1112,7 +1118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.10...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.11...HEAD
+[1.2.11]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.10...v1.2.11
 [1.2.10]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.9...v1.2.10
 [1.2.9]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.8...v1.2.9
 [1.2.8]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.7...v1.2.8
