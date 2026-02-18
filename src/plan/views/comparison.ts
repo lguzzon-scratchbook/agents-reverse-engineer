@@ -9,31 +9,8 @@
 
 import pc from 'picocolors';
 import { formatCost, formatDuration, formatTokens } from '../../dashboard/cost-calculator.js';
+import { formatDelta, pad } from '../../views/format-utils.js';
 import type { PlanComparison } from '../types.js';
-
-/**
- * Format a percentage delta string with color.
- *
- * Positive deltas (improvements) are green, negative are red.
- * For metrics where higher is better (tokens, sections, file refs, etc.)
- */
-function formatDelta(withVal: number, withoutVal: number): string {
-  if (withoutVal === 0) return withVal > 0 ? pc.green('N/A → ' + String(withVal)) : '—';
-  const pct = ((withVal - withoutVal) / withoutVal * 100);
-  const sign = pct >= 0 ? '+' : '';
-  const formatted = `${sign}${Math.round(pct)}%`;
-  return pct >= 0 ? pc.green(formatted) : pc.red(formatted);
-}
-
-/**
- * Pad a string to a fixed width (right-padded).
- */
-function pad(str: string, width: number): string {
-  // Strip ANSI codes for length calculation
-  const stripped = str.replace(/\x1B\[\d+m/g, '');
-  const padding = Math.max(0, width - stripped.length);
-  return str + ' '.repeat(padding);
-}
 
 /**
  * Render the full comparison report to the terminal.

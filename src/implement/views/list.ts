@@ -8,16 +8,8 @@
 
 import pc from 'picocolors';
 import { formatCost } from '../../dashboard/cost-calculator.js';
+import { pad } from '../../views/format-utils.js';
 import type { ImplementationComparison } from '../types.js';
-
-/**
- * Pad a string to a fixed width.
- */
-function pad(str: string, width: number): string {
-  const stripped = str.replace(/\x1B\[\d+m/g, '');
-  const padding = Math.max(0, width - stripped.length);
-  return str + ' '.repeat(padding);
-}
 
 /**
  * Render the list of saved implementation comparisons.
