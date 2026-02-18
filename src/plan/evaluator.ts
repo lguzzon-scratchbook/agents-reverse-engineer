@@ -1,14 +1,14 @@
 /**
  * AI quality evaluator for plan comparisons.
  *
- * Invokes a third AI call to evaluate both plans on a 5-point rubric.
- * Plans are presented in randomized order to prevent position bias.
+ * Invokes a third AI call via {@link AIService} to evaluate both plans
+ * on a 5-point rubric. Plans are presented in randomized order to
+ * prevent position bias.
  *
  * @module
  */
 
-import { runSubprocess } from '../ai/subprocess.js';
-import { ClaudeBackend } from '../ai/backends/claude.js';
+import type { AIService } from '../ai/service.js';
 import { buildEvaluatorPrompt } from './prompts.js';
 import type { QualitativeEvaluation, CriterionScore } from './types.js';
 
@@ -40,11 +40,13 @@ interface RawEvalResult {
  * Run the AI quality evaluator on two plans.
  *
  * Randomizes plan order to prevent position bias, invokes the AI
- * evaluator, and maps scores back to the original labels.
+ * evaluator via {@link AIService}, and maps scores back to the
+ * original labels.
  *
  * @param task - The original task description
  * @param withDocsPlan - Plan text from the "with docs" run
  * @param withoutDocsPlan - Plan text from the "without docs" run
+ * @param aiService - AI service instance for subprocess management
  * @param model - Model to use for evaluation
  * @param debug - Whether to enable debug output
  * @returns Qualitative evaluation result, or null if evaluation fails
@@ -53,6 +55,7 @@ export async function evaluatePlans(
   task: string,
   withDocsPlan: string,
   withoutDocsPlan: string,
+  aiService: AIService,
   model?: string,
   debug?: boolean,
 ): Promise<QualitativeEvaluation | null> {
@@ -64,40 +67,19 @@ export async function evaluatePlans(
 
   const prompt = buildEvaluatorPrompt(task, planA, planB);
 
-  // Run evaluator as non-agentic (no tools, single turn)
-  const args: string[] = [
-    '-p', prompt,
-    '--output-format', 'json',
-    '--no-session-persistence',
-    '--disable-slash-commands',
-    '--tools', '',
-    '--max-turns', '1',
-  ];
-
-  if (model) {
-    args.push('--model', model);
-  }
-
   if (debug) {
     console.error(`[eval] Running evaluator with model: ${model ?? 'default'}`);
   }
 
-  const result = await runSubprocess('claude', args, {
-    timeoutMs: EVAL_TIMEOUT_MS,
-  });
-
-  if (result.exitCode !== 0 && !result.stdout) {
-    if (debug) {
-      console.error(`[eval] Evaluator failed: exit ${result.exitCode}`);
-      console.error(`[eval] Stderr: ${result.stderr.slice(0, 500)}`);
-    }
-    return null;
-  }
-
   try {
-    // Parse the response to get the text
-    const backend = new ClaudeBackend();
-    const response = backend.parseResponse(result.stdout, result.durationMs, result.exitCode);
+    const response = await aiService.call({
+      prompt,
+      model,
+      timeoutMs: EVAL_TIMEOUT_MS,
+      maxTurns: 1,
+      // No allowedTools = backend uses --tools '' (non-agentic)
+      taskLabel: 'plan:evaluation',
+    });
 
     // Extract JSON from the response text
     const jsonText = extractJson(response.text);
@@ -132,7 +114,7 @@ export async function evaluatePlans(
     };
   } catch (error) {
     if (debug) {
-      console.error(`[eval] Failed to parse evaluator response: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`[eval] Failed to evaluate plans: ${error instanceof Error ? error.message : String(error)}`);
     }
     return null;
   }

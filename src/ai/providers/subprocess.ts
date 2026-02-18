@@ -143,7 +143,7 @@ export class SubprocessProvider implements AIProvider {
     const result = await runSubprocess(this.backend.cliCommand, args, {
       timeoutMs,
       input: stdinInput,
-      cwd: this.subprocessCwd ?? undefined,
+      cwd: options.cwd ?? this.subprocessCwd ?? undefined,
       onSpawn: (pid) => {
         this.tracer?.emit({
           type: 'subprocess:spawn',

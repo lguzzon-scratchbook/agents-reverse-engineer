@@ -1,14 +1,14 @@
 /**
  * AI quality evaluator for implementation comparisons.
  *
- * Runs a single-turn, non-agentic Claude invocation to blindly evaluate
- * two implementations. Randomizes presentation order to prevent position bias.
+ * Runs a single-turn, non-agentic AI invocation via {@link AIService}
+ * to blindly evaluate two implementations. Randomizes presentation
+ * order to prevent position bias.
  *
  * @module
  */
 
-import { runSubprocess } from '../ai/subprocess.js';
-import { ClaudeBackend } from '../ai/backends/claude.js';
+import type { AIService } from '../ai/service.js';
 import { buildEvaluatorPrompt } from './prompts.js';
 import type { ImplementationEvaluation, CriterionScore } from './types.js';
 
@@ -43,6 +43,7 @@ interface RawEvalResult {
  * @param task - The original task description
  * @param withDocsImpl - Implementation log from the "with docs" run
  * @param withoutDocsImpl - Implementation log from the "without docs" run
+ * @param aiService - AI service instance for subprocess management
  * @param model - Model to use for evaluation
  * @param debug - Enable debug logging
  * @returns Evaluation result, or null if evaluation fails
@@ -51,6 +52,7 @@ export async function evaluateImplementations(
   task: string,
   withDocsImpl: string,
   withoutDocsImpl: string,
+  aiService: AIService,
   model?: string,
   debug?: boolean,
 ): Promise<ImplementationEvaluation | null> {
@@ -62,31 +64,15 @@ export async function evaluateImplementations(
 
   const prompt = buildEvaluatorPrompt(task, implA, implB);
 
-  // Non-agentic single turn (no tools, just evaluation)
-  const args: string[] = [
-    '-p', prompt,
-    '--output-format', 'json',
-    '--no-session-persistence',
-    '--disable-slash-commands',
-    '--tools', '',
-    '--max-turns', '1',
-  ];
-
-  if (model) {
-    args.push('--model', model);
-  }
-
-  const result = await runSubprocess('claude', args, {
-    timeoutMs: EVAL_TIMEOUT_MS,
-  });
-
-  if (result.exitCode !== 0 && !result.stdout) {
-    return null;
-  }
-
   try {
-    const backend = new ClaudeBackend();
-    const response = backend.parseResponse(result.stdout, result.durationMs, result.exitCode);
+    const response = await aiService.call({
+      prompt,
+      model,
+      timeoutMs: EVAL_TIMEOUT_MS,
+      maxTurns: 1,
+      // No allowedTools = backend uses --tools '' (non-agentic)
+      taskLabel: 'implement:evaluation',
+    });
 
     const jsonText = extractJson(response.text);
     const raw: RawEvalResult = JSON.parse(jsonText);

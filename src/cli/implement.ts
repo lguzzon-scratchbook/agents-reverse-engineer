@@ -12,12 +12,16 @@
  * @module
  */
 
+import os from 'node:os';
 import path from 'node:path';
 import pc from 'picocolors';
 import { simpleGit } from 'simple-git';
 import { findProjectRoot, loadConfig } from '../config/loader.js';
 import { createBackendRegistry, resolveBackend } from '../ai/registry.js';
+import { AIService } from '../ai/service.js';
+import { consoleLogger } from '../core/logger.js';
 import { createLogger } from '../output/logger.js';
+import { createTraceWriter, cleanupOldTraces } from '../orchestration/index.js';
 import {
   loadComparison as loadPlanById,
   loadPlanText,
@@ -113,6 +117,34 @@ export async function implementCommand(
     const taskSlugCandidate = options.taskSlug || slugify(task);
     const planComparisons = await listPlanComparisons(projectRoot);
     planMatch = planComparisons.find(c => c.taskSlug === taskSlugCandidate) ?? null;
+  }
+
+  // Create AIService for subprocess management, telemetry, and tracing
+  const aiService = new AIService(backend, {
+    timeoutMs: config.ai.timeoutMs,
+    maxRetries: config.ai.maxRetries,
+    model,
+    command: 'implement',
+    telemetry: { keepRuns: config.ai.telemetry.keepRuns },
+  }, consoleLogger);
+
+  // Evaluator calls use os.tmpdir(); executor calls override via per-call cwd
+  aiService.setSubprocessCwd(os.tmpdir());
+
+  if (options.debug) {
+    aiService.setDebug(true);
+  }
+
+  // Create trace writer
+  const tracer = createTraceWriter(projectRoot, options.trace ?? false);
+  if (options.trace) {
+    aiService.setTracer(tracer);
+    const logDir = path.join(
+      projectRoot, '.agents-reverse-engineer', 'subprocess-logs',
+      new Date().toISOString().replace(/[:.]/g, '-'),
+    );
+    aiService.setSubprocessLogDir(logDir);
+    console.error(pc.dim(`[trace] Subprocess logs → ${logDir}`));
   }
 
   const taskSlug = planMatch ? planMatch.taskSlug : (options.taskSlug || slugify(task));
@@ -231,6 +263,7 @@ export async function implementCommand(
       runTests: options.runTests,
       runBuild: options.runBuild,
       runLint: options.runLint,
+      aiService,
     });
     renderPhaseComplete(
       withoutDocsResult.latencyMs,
@@ -251,6 +284,7 @@ export async function implementCommand(
       runTests: options.runTests,
       runBuild: options.runBuild,
       runLint: options.runLint,
+      aiService,
     });
     renderPhaseComplete(
       withDocsResult.latencyMs,
@@ -272,6 +306,7 @@ export async function implementCommand(
         task,
         withDocsLog,
         withoutDocsLog,
+        aiService,
         evalModel,
         options.debug,
       );
@@ -325,6 +360,13 @@ export async function implementCommand(
 
     // Render results
     renderComparison(comparison);
+
+    // Finalize telemetry and tracing
+    await aiService.finalize(projectRoot);
+    await tracer.finalize();
+    if (options.trace) {
+      await cleanupOldTraces(projectRoot);
+    }
 
     // Print worktree paths for inspection
     console.log(`Worktrees: ${worktrees.withDocsPath}`);

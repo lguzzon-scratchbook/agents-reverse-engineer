@@ -104,10 +104,16 @@ export class ClaudeBackend implements AIBackend {
       '-p',                        // Non-interactive print mode
       '--output-format', 'json',   // Structured JSON output
       '--no-session-persistence',  // Don't save session to disk
-      '--tools', '',               // Disable all tools (content passed inline via stdin)
       '--disable-slash-commands',  // No skills needed in subprocesses
       '--max-turns', String(options.maxTurns ?? 1),  // Single turn by default
     ];
+
+    // Agentic mode: allow specific tools; otherwise disable all tools
+    if (options.allowedTools) {
+      args.push('--allowedTools', options.allowedTools);
+    } else {
+      args.push('--tools', '');
+    }
 
     if (options.model) {
       args.push('--model', options.model);

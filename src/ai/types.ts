@@ -55,6 +55,10 @@ export interface AICallOptions {
   maxTurns?: number;
   /** Label for tracing (e.g., file path being processed) */
   taskLabel?: string;
+  /** Comma-separated list of allowed tools (e.g. "Read,Glob,Grep,Bash"). When set, enables agentic mode. */
+  allowedTools?: string;
+  /** Working directory override for this specific call (e.g. worktree path). Takes precedence over service-level CWD. */
+  cwd?: string;
 }
 
 /**
