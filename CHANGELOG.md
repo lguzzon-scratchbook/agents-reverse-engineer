@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.12] - 2026-02-18
+
+### Changed
+- **AIService integration for plan and implement executors** — Refactored `plan/executor.ts` and `implement/executor.ts` to use `AIService` instead of raw `runSubprocess` + `ClaudeBackend`, gaining automatic retry logic, telemetry logging, and subprocess tracing for A/B test runs
+- **Expanded allowed tools for A/B test runs** — Plan execution now permits `Task`, `WebSearch`, and `WebFetch` tools in addition to `Read`, `Glob`, `Grep`, `Bash`; implementation execution adds `Task`, `WebSearch`, `WebFetch`, and `TodoWrite` for richer agentic workflows
+- **Per-call CWD override in AIService** — Added `cwd` option to `AICallOptions` so individual AI calls (e.g., worktree-scoped runs) can override the service-level subprocess working directory
+- **Dynamic `--allowedTools` flag in Claude backend** — Claude backend now conditionally passes `--allowedTools` when specified (agentic mode) or `--tools ''` when not, replacing the previous always-disabled-tools approach
+
 ## [1.2.11] - 2026-02-18
 
 ### Changed
@@ -1118,7 +1126,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.11...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.12...HEAD
+[1.2.12]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.11...v1.2.12
 [1.2.11]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.10...v1.2.11
 [1.2.10]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.9...v1.2.10
 [1.2.9]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.8...v1.2.9
