@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (8/12):
+
 From Docs to Specs: Using are-specify to Generate Project Specifications
 
 After running are generate, your codebase has documentation distributed across .sum files and AGENTS.md directories. But understanding the full architecture requires stitching together dozens of files. What if you need a single document for onboarding or project handoffs?

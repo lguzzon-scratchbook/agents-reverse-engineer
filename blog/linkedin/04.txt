@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (4/12):
+
 The Two-Phase Pipeline: How ARE Understands Your Codebase
 
 When you run are generate, progress bars tick through files and directories. What's happening under the hood? Here's how raw source code becomes AI-friendly documentation.

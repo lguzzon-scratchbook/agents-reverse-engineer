@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (3/12):
+
 Anatomy of Generated Documentation: .sum Files and AGENTS.md Explained
 
 After running agents-reverse-engineer, new files appear: .sum files alongside source code, AGENTS.md in directories, and pointer files like CLAUDE.md at the root. Here's what they contain.
@@ -15,7 +17,7 @@ Markdown Sections provide documentation:
   1. Purpose: What the file does
   2. Public Interface: Exported functions, classes, types with signatures
   3. Dependencies: What the file imports
-  4. Implementation Notes: Algorithms, patterns, limitations
+  4. Implementation Notes: Algorithms, patterns, conventions/style, limitations
 
 ARE places .sum files next to source files for proximity. When AI reads token-service.ts, having token-service.ts.sum adjacent makes discovery trivial.
 
@@ -27,7 +29,7 @@ Every directory containing source files gets an AGENTS.md providing high-level o
   2. Files section: Groups files by purpose with descriptions
   3. Subdirectories section: Lists child directories creating navigable hierarchy
 
-AGENTS.md is an emerging cross-tool standard recognized by Claude Code, Gemini CLI, and OpenCode.
+AGENTS.md is an emerging cross-tool standard recognized by Codex, OpenCode and some others.
 
 When ARE encounters existing AGENTS.md files:
   1. Renames your file to AGENTS.local.md
@@ -38,7 +40,7 @@ Your hand-written context is preserved through the directive.
 
 POINTER FILES: RUNTIME BRIDGES
 
-At project root, you'll find CLAUDE.md, GEMINI.md, or OPENCODE.md — single-line pointer files containing @AGENTS.md. Each AI runtime has auto-load conventions; ARE uses lightweight adapters pointing to universal AGENTS.md format.
+At project root, you'll find CLAUDE.md or GEMINI.md — single-line pointer files containing @AGENTS.md. Each AI runtime has auto-load conventions; ARE uses lightweight adapters pointing to universal AGENTS.md format.
 
 THE HIERARCHY
 
@@ -46,8 +48,9 @@ An AI assistant's journey:
   1. Claude Code loads /CLAUDE.md
   2. CLAUDE.md references @AGENTS.md, loading /AGENTS.md
   3. /AGENTS.md references subdirectories like src/
-  4. Claude loads /src/AGENTS.md
-  5. When details needed, Claude reads individual .sum files
+  4. Claude reads a file in src/
+  4. Claude loads /src/AGENTS.md automatically
+  5. When details needed, Claude reads individual .sum or the files directly
 
 Each level provides progressively more detail.
 

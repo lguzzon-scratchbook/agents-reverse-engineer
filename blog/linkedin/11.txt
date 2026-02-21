@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (11/12):
+
 Quality Gates and Debugging: ARE's Built-in Validation System
 
 Generated documentation is only valuable if it's accurate. An AGENTS.md that references non-existent functions or misses critical exports creates more problems than it solves. That's why agents-reverse-engineer includes multi-layered validation.

@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (7/12):
+
 Configuration Mastery: Tuning ARE for Your Project
 
 Agents-reverse-engineer (ARE) works great out of the box with intelligent defaults, but tuning the configuration can dramatically improve results for your specific project. This guide covers every setting in .agents-reverse-engineer/config.yaml.

@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (9/12):
+
 Rebuilding from Specs: ARE's Code Reconstruction Pipeline
 
 Documentation tools typically work one way: code to docs. agents-reverse-engineer goes further — are rebuild takes project specifications and reconstructs source code, completing the full circle.

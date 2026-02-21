@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (12/12):
+
 Integrating ARE into Your Team Workflow: CI/CD, Hooks, and Automation
 
 You've mastered agents-reverse-engineer (ARE) individually. Now make it a team tool. Here's how to scale from personal use to shared infrastructure.

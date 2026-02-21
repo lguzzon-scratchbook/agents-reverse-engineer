@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (6/12):
+
 Multi-Runtime Support: Claude Code, Gemini CLI, OpenCode, and Codex
 
 The AI coding assistant landscape is diversifying fast. agents-reverse-engineer (ARE) was designed to work across multiple AI assistants, generating documentation that works seamlessly with all of them.

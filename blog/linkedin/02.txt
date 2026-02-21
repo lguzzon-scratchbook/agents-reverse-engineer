@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (2/12):
+
 Getting Started with agents-reverse-engineer in 5 Minutes
 
 agents-reverse-engineer (ARE) is a CLI tool that generates AI-friendly documentation for your codebase automatically. Instead of manually explaining your project to AI coding assistants, ARE analyzes your code and creates comprehensive documentation that AI models can read instantly.

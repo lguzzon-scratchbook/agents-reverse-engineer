@@ -1,3 +1,5 @@
+Agents Reverse Engineer (ARE) - Blog Serie (5/12):
+
 Incremental Updates: Keep Docs Fresh Without Regenerating Everything
 
 Your codebase evolves daily. Each change potentially invalidates documentation. Regenerating everything from scratch wastes time and API calls.
