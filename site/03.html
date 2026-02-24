@@ -139,17 +139,17 @@
 <li><strong>Purpose</strong>: What the file does</li>
 <li><strong>Public Interface</strong>: Exported functions, classes, types with signatures</li>
 <li><strong>Dependencies</strong>: What the file imports</li>
-<li><strong>Implementation Notes</strong>: Algorithms, patterns, limitations</li>
+<li><strong>Implementation Notes</strong>: Algorithms, patterns, conventions/style, limitations</li>
 </ol>
 <p>ARE places <code>.sum</code> files next to source files for proximity. When AI reads <code>token-service.ts</code>, having <code>token-service.ts.sum</code> adjacent makes discovery trivial.</p>
 <h2>AGENTS.md: Directory Overviews</h2>
 <p>Every directory containing source files gets an <code>AGENTS.md</code> providing high-level overviews:</p>
 <ol>
 <li><strong>Directory description</strong>: Paragraph explaining the directory&#39;s role</li>
-<li><strong>Files section</strong>: Groups files by purpose with bolded links and descriptions</li>
+<li><strong>Files section</strong>: Groups files by purpose with descriptions</li>
 <li><strong>Subdirectories section</strong>: Lists child directories creating navigable hierarchy</li>
 </ol>
-<p><code>AGENTS.md</code> is an emerging cross-tool standard recognized by Claude Code, Gemini CLI, and OpenCode.</p>
+<p><code>AGENTS.md</code> is an emerging cross-tool standard recognized by Codex, OpenCode and some others.</p>
 <p>When ARE encounters existing <code>AGENTS.md</code> files:</p>
 <ol>
 <li>Renames your file to <code>AGENTS.local.md</code></li>
@@ -158,15 +158,16 @@
 </ol>
 <p>Your hand-written context is preserved through the directive.</p>
 <h2>Pointer Files: Runtime Bridges</h2>
-<p>At project root, you&#39;ll find <code>CLAUDE.md</code>, <code>GEMINI.md</code>, or <code>OPENCODE.md</code> — single-line pointer files containing <code>@AGENTS.md</code>. Each AI runtime has auto-load conventions; ARE uses lightweight adapters pointing to universal <code>AGENTS.md</code> format.</p>
+<p>At project root, you&#39;ll find <code>CLAUDE.md</code> or <code>GEMINI.md</code> — single-line pointer files containing <code>@AGENTS.md</code>. Each AI runtime has auto-load conventions; ARE uses lightweight adapters pointing to universal <code>AGENTS.md</code> format.</p>
 <h2>The Hierarchy</h2>
 <p>An AI assistant&#39;s journey:</p>
 <ol>
 <li>Claude Code loads <code>/CLAUDE.md</code></li>
 <li><code>CLAUDE.md</code> references <code>@AGENTS.md</code>, loading <code>/AGENTS.md</code></li>
 <li><code>/AGENTS.md</code> references subdirectories like <code>src/</code></li>
-<li>Claude loads <code>/src/AGENTS.md</code></li>
-<li>When details needed, Claude reads individual <code>.sum</code> files</li>
+<li>Claude reads a file in <code>src/</code></li>
+<li>Claude loads <code>/src/AGENTS.md</code> automatically</li>
+<li>When details needed, Claude reads individual <code>.sum</code> or the files directly</li>
 </ol>
 <p>Each level provides progressively more detail.</p>
 <h2>Quality Indicators</h2>
