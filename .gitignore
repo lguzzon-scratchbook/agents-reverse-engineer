@@ -31,6 +31,9 @@ npm-debug.log*
 .agents-reverse-engineer/subprocess-logs/
 .agents-reverse-engineer/traces/
 .agents-reverse-engineer/GENERATION_PLAN.md
+.agents-reverse-engineer/implementations/
+.agents-reverse-engineer/plans/
+.agents-reverse-engineer/dashboard-report.html
 specs/
 rebuild/
 !src/rebuild/
