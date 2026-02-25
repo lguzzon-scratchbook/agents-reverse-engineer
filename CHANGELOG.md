@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.14] - 2026-02-25
+
+### Added
+- **Backend auto-detection for `are init`** — The init command now detects available AI CLI backends on PATH (Claude, Codex, Gemini, OpenCode) and configures the best available backend and model as defaults in `config.yaml`, instead of always defaulting to `auto`
+- **`detectAvailableBackends()` registry function** — New function in `src/ai/registry.ts` that checks all registered backends for availability and returns those found on PATH, preserving priority order (Claude > Codex > Gemini > OpenCode)
+- **`getDefaultBackendConfig()` config helper** — New function in `src/config/loader.ts` that returns the optimal backend/model pair based on detected CLI availability, with sensible model defaults per backend
+
+### Fixed
+- **Codex command prefix in installer banner and templates** — Changed Codex command prefix from `/are-` to `$are-` in post-install next steps and integration templates for consistency with Codex's skill invocation syntax
+
 ## [1.2.13] - 2026-02-24
 
 ### Added
@@ -1135,7 +1145,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.13...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.14...HEAD
+[1.2.14]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.13...v1.2.14
 [1.2.13]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.12...v1.2.13
 [1.2.12]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.11...v1.2.12
 [1.2.11]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.10...v1.2.11
