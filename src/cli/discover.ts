@@ -58,53 +58,54 @@ export async function discoverCommand(
   targetPath: string,
   options: DiscoverOptions
 ): Promise<void> {
-  // Resolve to absolute path (default to cwd), then walk up to find project root
-  const resolvedPath = await findProjectRoot(path.resolve(targetPath || process.cwd()));
+  // Resolve target directory and project root separately
+  const targetDir = path.resolve(targetPath || process.cwd());
+  const projectRoot = await findProjectRoot(targetDir);
 
   // Load configuration (uses defaults if no config file)
-  const config = await loadConfig(resolvedPath);
+  const config = await loadConfig(projectRoot);
 
   const logger = createLogger({ colors: config.output.colors });
 
   // Verify target path exists
   try {
-    await access(resolvedPath, constants.R_OK);
+    await access(targetDir, constants.R_OK);
   } catch (err) {
     const error = err as NodeJS.ErrnoException;
     if (error.code === 'ENOENT') {
-      logger.error(`Directory not found: ${resolvedPath}`);
+      logger.error(`Directory not found: ${targetDir}`);
       process.exit(1);
     }
     if (error.code === 'EACCES' || error.code === 'EPERM') {
-      logger.error(`Permission denied: ${resolvedPath}`);
+      logger.error(`Permission denied: ${targetDir}`);
       process.exit(1);
     }
     throw error;
   }
 
   // Create progress log for tail -f monitoring
-  const progressLog = ProgressLog.create(resolvedPath, 'discover');
+  const progressLog = ProgressLog.create(projectRoot, 'discover');
   progressLog.write(`=== ARE Discover (${new Date().toISOString()}) ===`);
-  progressLog.write(`Project: ${resolvedPath}`);
+  progressLog.write(`Project: ${targetDir}`);
   progressLog.write('');
 
-  logger.info(`Discovering files in ${resolvedPath}...`);
+  logger.info(`Discovering files in ${targetDir}...`);
   logger.info('');
-  progressLog.write(`Discovering files in ${resolvedPath}...`);
+  progressLog.write(`Discovering files in ${targetDir}...`);
 
   // Emit discovery start trace event
   const discoveryStartTime = process.hrtime.bigint();
   options.tracer?.emit({
     type: 'discovery:start',
-    targetPath: resolvedPath,
+    targetPath: targetDir,
   });
 
   if (options.debug) {
-    console.error(pc.dim(`[debug] Discovering files in: ${resolvedPath}`));
+    console.error(pc.dim(`[debug] Discovering files in: ${targetDir}`));
   }
 
   // Run shared discovery pipeline (walk + filter)
-  const result = await discoverFiles(resolvedPath, config, {
+  const result = await discoverFiles(targetDir, config, {
     tracer: options.tracer,
     debug: options.debug,
   });
@@ -130,7 +131,7 @@ export async function discoverCommand(
   // Log results
   // Make paths relative for cleaner output
   const relativePath = (absPath: string): string =>
-    path.relative(resolvedPath, absPath);
+    path.relative(targetDir, absPath);
 
   // Show each included file
   for (const file of result.included) {
@@ -166,23 +167,23 @@ export async function discoverCommand(
     };
 
     // Create orchestrator and build generation plan
-    const orchestrator = createOrchestrator(config, resolvedPath);
+    const orchestrator = createOrchestrator(config, targetDir);
     const generationPlan = await orchestrator.createPlan(discoveryResult);
 
     // Build execution plan with post-order traversal
-    const executionPlan = buildExecutionPlan(generationPlan, resolvedPath);
+    const executionPlan = buildExecutionPlan(generationPlan, targetDir);
 
     // Format as markdown
     const markdown = formatExecutionPlanAsMarkdown(executionPlan);
 
     // Write to .agents-reverse-engineer/GENERATION-PLAN.md
-    const configDir = path.join(resolvedPath, '.agents-reverse-engineer');
+    const configDir = path.join(projectRoot, '.agents-reverse-engineer');
     const planPath = path.join(configDir, 'GENERATION-PLAN.md');
 
     try {
       await mkdir(configDir, { recursive: true });
       await writeFile(planPath, markdown, 'utf8');
-      const planRelPath = path.relative(resolvedPath, planPath);
+      const planRelPath = path.relative(projectRoot, planPath);
       logger.info(`Created ${planRelPath}`);
       progressLog.write(`Created ${planRelPath}`);
     } catch (err) {

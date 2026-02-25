@@ -171,25 +171,26 @@ export async function updateCommand(
   targetPath: string,
   options: UpdateOptions
 ): Promise<void> {
-  const absolutePath = await findProjectRoot(path.resolve(targetPath));
+  const targetDir = path.resolve(targetPath);
+  const projectRoot = await findProjectRoot(targetDir);
   const logger = createLogger({ colors: true });
 
-  logger.info(`Checking for updates in: ${absolutePath}`);
+  logger.info(`Checking for updates in: ${targetDir}`);
 
   // Create trace writer (moved earlier to use in config loading and orchestrator)
-  const tracer = createTraceWriter(absolutePath, options.trace ?? false);
+  const tracer = createTraceWriter(projectRoot, options.trace ?? false);
   if (options.trace && tracer.filePath) {
     console.error(pc.dim(`[trace] Writing to ${tracer.filePath}`));
   }
 
   // Load configuration
-  const config = await loadConfig(absolutePath, {
+  const config = await loadConfig(projectRoot, {
     tracer,
     debug: options.debug,
   });
 
   // Create orchestrator
-  const orchestrator = createUpdateOrchestrator(config, absolutePath, {
+  const orchestrator = createUpdateOrchestrator(config, targetDir, {
     tracer,
     debug: options.debug,
   });
@@ -248,7 +249,7 @@ export async function updateCommand(
     }
 
     // Provision backend-specific resources (e.g., OpenCode agent config)
-    await backend.ensureProjectConfig?.(absolutePath);
+    await backend.ensureProjectConfig?.(projectRoot);
 
     // Resolve effective model (CLI flag > config)
     const effectiveModel = options.model ?? config.ai.model;
@@ -294,7 +295,7 @@ export async function updateCommand(
     // Enable subprocess output logging alongside tracing
     if (options.trace) {
       const logDir = path.join(
-        absolutePath, '.agents-reverse-engineer', 'subprocess-logs',
+        projectRoot, '.agents-reverse-engineer', 'subprocess-logs',
         new Date().toISOString().replace(/[:.]/g, '-'),
       );
       aiService.setSubprocessLogDir(logDir);
@@ -302,9 +303,9 @@ export async function updateCommand(
     }
 
     // Create progress log for tail -f monitoring
-    const progressLog = ProgressLog.create(absolutePath, 'update', backend.name, effectiveModel);
+    const progressLog = ProgressLog.create(projectRoot, 'update', backend.name, effectiveModel);
     progressLog.write(`=== ARE Update (${new Date().toISOString()}) ===`);
-    progressLog.write(`Project: ${absolutePath}`);
+    progressLog.write(`Project: ${targetDir}`);
     progressLog.write(`Files to analyze: ${plan.filesToAnalyze.length} | Directories: ${plan.affectedDirs.length}`);
     progressLog.write('');
 
@@ -325,7 +326,7 @@ export async function updateCommand(
     const runStart = Date.now();
     const summary = await runner.executeUpdate(
       plan.fileTasks,
-      absolutePath,
+      targetDir,
       config,
     );
 
@@ -360,7 +361,7 @@ export async function updateCommand(
           phase: 'update-phase-dir-regen',
         });
 
-        const dirPath = dir === '.' ? absolutePath : path.join(absolutePath, dir);
+        const dirPath = dir === '.' ? targetDir : path.join(targetDir, dir);
         dirReporter.onDirectoryStart(dir || '.');
         try {
           // Read existing generated AGENTS.md for incremental update context
@@ -375,12 +376,12 @@ export async function updateCommand(
             // No existing AGENTS.md — will generate from scratch
           }
 
-          const prompt = await buildDirectoryPrompt(dirPath, absolutePath, options.debug, knownDirs, undefined, existingAgentsMd, undefined, variant);
+          const prompt = await buildDirectoryPrompt(dirPath, targetDir, options.debug, knownDirs, undefined, existingAgentsMd, undefined, variant);
           const response = await aiService.call({
             prompt: prompt.user,
             systemPrompt: prompt.system,
           });
-          await writeAgentsMd(dirPath, absolutePath, response.text, variant);
+          await writeAgentsMd(dirPath, targetDir, response.text, variant);
           if (variant) {
             await writeAgentsMdHub(dirPath, variant);
           }
@@ -462,13 +463,13 @@ export async function updateCommand(
     // Telemetry finalization
     // -------------------------------------------------------------------------
 
-    await aiService.finalize(absolutePath);
+    await aiService.finalize(projectRoot);
 
     // Finalize progress log, trace, and clean up old trace files
     await progressLog.finalize();
     await tracer.finalize();
     if (options.trace) {
-      await cleanupOldTraces(absolutePath);
+      await cleanupOldTraces(projectRoot);
     }
 
     // -------------------------------------------------------------------------

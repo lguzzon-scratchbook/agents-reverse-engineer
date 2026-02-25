@@ -96,19 +96,20 @@ export async function generateCommand(
   targetPath: string,
   options: GenerateOptions
 ): Promise<void> {
-  const absolutePath = await findProjectRoot(path.resolve(targetPath));
+  const targetDir = path.resolve(targetPath);
+  const projectRoot = await findProjectRoot(targetDir);
   const logger = createLogger({ colors: true });
 
-  logger.info(`Generating documentation plan for: ${absolutePath}`);
+  logger.info(`Generating documentation plan for: ${targetDir}`);
 
   // Create trace writer (moved earlier to use in config loading and discovery)
-  const tracer = createTraceWriter(absolutePath, options.trace ?? false);
+  const tracer = createTraceWriter(projectRoot, options.trace ?? false);
   if (options.trace && tracer.filePath) {
     console.error(pc.dim(`[trace] Writing to ${tracer.filePath}`));
   }
 
   // Load configuration
-  const config = await loadConfig(absolutePath, {
+  const config = await loadConfig(projectRoot, {
     tracer,
     debug: options.debug,
   });
@@ -116,7 +117,7 @@ export async function generateCommand(
   // Discover files
   logger.info('Discovering files...');
 
-  const filterResult = await discoverFiles(absolutePath, config, {
+  const filterResult = await discoverFiles(targetDir, config, {
     tracer,
     debug: options.debug,
   });
@@ -133,7 +134,7 @@ export async function generateCommand(
   logger.info('Creating generation plan...');
   const orchestrator = createOrchestrator(
     config,
-    absolutePath,
+    targetDir,
     { tracer, debug: options.debug }
   );
 
@@ -172,7 +173,7 @@ export async function generateCommand(
   if (options.dryRun) {
     // Dry-run doesn't resolve backend, so compute variant from config defaults
     const dryRunVariant = options.eval ? `${options.backend ?? config.ai.backend}.${options.model ?? config.ai.model}` : undefined;
-    const executionPlan = buildExecutionPlan(plan, absolutePath, dryRunVariant);
+    const executionPlan = buildExecutionPlan(plan, targetDir, dryRunVariant);
     const dirCount = Object.keys(executionPlan.directoryFileMap).length;
 
     console.log(pc.bold('\n--- Dry Run Summary ---\n'));
@@ -223,7 +224,7 @@ export async function generateCommand(
   }
 
   // Provision backend-specific resources (e.g., OpenCode agent config)
-  await backend.ensureProjectConfig?.(absolutePath);
+  await backend.ensureProjectConfig?.(projectRoot);
 
   // Resolve effective model (CLI flag > config)
   const effectiveModel = options.model ?? config.ai.model;
@@ -261,7 +262,7 @@ export async function generateCommand(
   }
 
   // Build execution plan
-  const executionPlan = buildExecutionPlan(plan, absolutePath, variant);
+  const executionPlan = buildExecutionPlan(plan, targetDir, variant);
 
   // Determine concurrency
   const concurrency = options.concurrency ?? config.ai.concurrency;
@@ -269,7 +270,7 @@ export async function generateCommand(
   // Enable subprocess output logging alongside tracing
   if (options.trace) {
     const logDir = path.join(
-      absolutePath, '.agents-reverse-engineer', 'subprocess-logs',
+      projectRoot, '.agents-reverse-engineer', 'subprocess-logs',
       new Date().toISOString().replace(/[:.]/g, '-'),
     );
     aiService.setSubprocessLogDir(logDir);
@@ -277,9 +278,9 @@ export async function generateCommand(
   }
 
   // Create progress log for tail -f monitoring
-  const progressLog = ProgressLog.create(absolutePath, 'generate', backend.name, effectiveModel);
+  const progressLog = ProgressLog.create(projectRoot, 'generate', backend.name, effectiveModel);
   progressLog.write(`=== ARE Generate (${new Date().toISOString()}) ===`);
-  progressLog.write(`Project: ${absolutePath}`);
+  progressLog.write(`Project: ${targetDir}`);
   const skippedCount = plan.skippedFiles?.length ?? 0;
   const skipInfo = skippedCount > 0 ? ` | Skipped: ${skippedCount}` : '';
   progressLog.write(`Files: ${executionPlan.fileTasks.length} | Directories: ${executionPlan.directoryTasks.length}${skipInfo}`);
@@ -303,13 +304,13 @@ export async function generateCommand(
   });
 
   // Write telemetry run log
-  await aiService.finalize(absolutePath);
+  await aiService.finalize(projectRoot);
 
   // Finalize trace, progress log, and clean up old trace files
   await progressLog.finalize();
   await tracer.finalize();
   if (options.trace) {
-    await cleanupOldTraces(absolutePath);
+    await cleanupOldTraces(projectRoot);
   }
 
   // Determine exit code from RunSummary
