@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.15] - 2026-02-25
+
+### Added
+- **Auto-initialize project during installation** — The installer now automatically creates `config.yaml`, updates `.gitignore`, and configures `.vscode/settings.json` during install, eliminating the need for a separate `are init` step
+- **`getDefaultModelForBackend()` utility** — New exported function in `src/config/loader.ts` that returns the default model string for a given backend name, exposed via the core programmatic API
+- **`.npm-cache` gitignore pattern** — The `.gitignore` management now includes `.npm-cache` alongside `*.sum` in the `# agents-reverse-engineer` section
+
+### Changed
+- **Simplified post-install next steps** — Removed the `are init` step from the next steps banner since initialization is now automatic (steps renumbered from 7 to 6)
+- **Updated default Codex model** — Changed default Codex model from `gpt-5.3-codex` to `gpt-5-codex-mini`
+
 ## [1.2.14] - 2026-02-25
 
 ### Added
@@ -1145,7 +1156,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.14...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.15...HEAD
+[1.2.15]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.14...v1.2.15
 [1.2.14]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.13...v1.2.14
 [1.2.13]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.12...v1.2.13
 [1.2.12]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.11...v1.2.12
