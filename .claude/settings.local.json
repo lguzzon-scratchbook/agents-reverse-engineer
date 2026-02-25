@@ -32,7 +32,9 @@
       "Bash(/home/pascal/wks/agents-reverse-engineer/node_modules/.bin/are dashboard:*)",
       "Bash(wslview:*)",
       "Bash(xdg-open:*)",
-      "Bash(xargs git log:*)"
+      "Bash(xargs git log:*)",
+      "WebFetch(domain:developers.openai.com)",
+      "WebFetch(domain:platform.openai.com)"
     ]
   }
 }

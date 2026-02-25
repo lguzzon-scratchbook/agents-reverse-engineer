@@ -201,10 +201,20 @@ export async function configExists(root: string): Promise<boolean> {
  */
 const BACKEND_DEFAULT_MODELS: Record<string, string> = {
   claude: 'sonnet',
-  codex: 'gpt-5.3-codex',
+  codex: 'gpt-5-codex-mini',
   gemini: 'gemini-3-flash-preview',
   opencode: 'anthropic/claude-sonnet-4-5',
 };
+
+/**
+ * Get the default model for a given backend name.
+ *
+ * @param backend - Backend name (claude, codex, gemini, opencode)
+ * @returns Default model string for that backend, or 'auto' if unknown
+ */
+export function getDefaultModelForBackend(backend: string): string {
+  return BACKEND_DEFAULT_MODELS[backend] ?? 'auto';
+}
 
 /**
  * Detect available AI backends and return the best default backend/model pair.

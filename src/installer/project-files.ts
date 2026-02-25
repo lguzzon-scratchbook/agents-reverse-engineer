@@ -11,6 +11,8 @@ import { parse, modify, applyEdits, type ParseError } from 'jsonc-parser';
 
 const GITIGNORE_SECTION = '# agents-reverse-engineer';
 const SUM_PATTERN = '*.sum';
+const NPM_CACHE_PATTERN = '.npm-cache';
+const GITIGNORE_PATTERNS = [SUM_PATTERN, NPM_CACHE_PATTERN];
 
 // ── .gitignore ──────────────────────────────────────────────────────
 
@@ -32,21 +34,27 @@ export async function ensureGitignoreEntry(root: string): Promise<boolean> {
     // File doesn't exist — will create
   }
 
-  // Already has the entry
-  if (content.split('\n').some((line) => line.trim() === SUM_PATTERN)) {
+  // Check which patterns are missing
+  const lines = content.split('\n');
+  const missingPatterns = GITIGNORE_PATTERNS.filter(
+    (pattern) => !lines.some((line) => line.trim() === pattern),
+  );
+
+  if (missingPatterns.length === 0) {
     return false;
   }
 
   const sectionIdx = content.indexOf(GITIGNORE_SECTION);
   if (sectionIdx !== -1) {
-    // Insert after the section header line
+    // Insert missing patterns after the section header line
     const endOfLine = content.indexOf('\n', sectionIdx);
     const insertAt = endOfLine === -1 ? content.length : endOfLine;
-    content = content.slice(0, insertAt) + '\n' + SUM_PATTERN + content.slice(insertAt);
+    const insert = missingPatterns.map((p) => '\n' + p).join('');
+    content = content.slice(0, insertAt) + insert + content.slice(insertAt);
   } else {
-    // Append new section
+    // Append new section with all missing patterns
     const separator = content.length > 0 && !content.endsWith('\n') ? '\n\n' : content.length > 0 ? '\n' : '';
-    content += `${separator}${GITIGNORE_SECTION}\n${SUM_PATTERN}\n`;
+    content += `${separator}${GITIGNORE_SECTION}\n${missingPatterns.join('\n')}\n`;
   }
 
   await writeFile(gitignorePath, content, 'utf-8');
@@ -89,7 +97,7 @@ export async function removeGitignoreEntry(dryRun: boolean): Promise<boolean> {
       // Skip subsequent lines that belong to this section (*.sum and blank lines)
       while (i < lines.length) {
         const trimmed = lines[i].trim();
-        if (trimmed === SUM_PATTERN) {
+        if (GITIGNORE_PATTERNS.includes(trimmed)) {
           i++;
           continue;
         }

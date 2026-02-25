@@ -22,6 +22,8 @@ import {
 import { selectRuntime, selectLocation, confirmAction, isInteractive } from './prompts.js';
 import { installFiles, verifyInstallation, formatInstallResult } from './operations.js';
 import { uninstallFiles, deleteConfigFolder, removeGitignoreEntry, removeVscodeExclude } from './uninstall.js';
+import { ensureGitignoreEntry, ensureVscodeExclude } from './project-files.js';
+import { configExists, writeDefaultConfig, getDefaultBackendConfig, getDefaultModelForBackend } from '../config/loader.js';
 import { SplitPaneLayout, clearScreen } from './layout.js';
 import { Spinner, GOLDEN_CIRCLE_SPINNER } from './spinner.js';
 
@@ -257,6 +259,45 @@ async function runInstall(
       : undefined,
   });
 
+  // Initialize project: .gitignore, config.yaml, .vscode/settings.json
+  const projectRoot = process.cwd();
+  let configCreated = false;
+
+  if (location === 'local') {
+    try {
+      await ensureGitignoreEntry(projectRoot);
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  // Create config.yaml if it doesn't exist (merges `are init` into install)
+  try {
+    if (!(await configExists(projectRoot))) {
+      let backend: string;
+      let model: string;
+      if (runtime === 'all') {
+        const detected = await getDefaultBackendConfig();
+        backend = detected.backend;
+        model = detected.model;
+      } else {
+        backend = runtime;
+        model = getDefaultModelForBackend(runtime);
+      }
+      await writeDefaultConfig(projectRoot, { backend, model });
+      configCreated = true;
+    }
+  } catch {
+    // Non-fatal
+  }
+
+  // Hide generated *.sum files in VS Code
+  try {
+    await ensureVscodeExclude(projectRoot);
+  } catch {
+    // Non-fatal
+  }
+
   // Verify installation
   const allCreatedFiles = results.flatMap((r) => r.filesCreated);
   const verification = verifyInstallation(allCreatedFiles);
@@ -277,7 +318,7 @@ async function runInstall(
 
   // Display results
   if (!quiet) {
-    displayInstallResults(results, layout);
+    displayInstallResults(results, configCreated, layout);
   }
 
   return results;
@@ -322,7 +363,7 @@ async function runUninstall(
  * Display installation results with styled output.
  * Renders in split-pane right pane when layout is provided.
  */
-function displayInstallResults(results: InstallerResult[], layout?: SplitPaneLayout): void {
+function displayInstallResults(results: InstallerResult[], configCreated: boolean, layout?: SplitPaneLayout): void {
   const output = (text: string): void => {
     if (layout) {
       layout.appendRight(text);
@@ -362,6 +403,9 @@ function displayInstallResults(results: InstallerResult[], layout?: SplitPaneLay
   }
   if (hooksRegistered > 0) {
     output(pc.green('✓') + ` Registered ${hooksRegistered} session hook(s)`);
+  }
+  if (configCreated) {
+    output(pc.green('✓') + ` Initialized project configuration`);
   }
   if (totalSkipped > 0) {
     output(pc.yellow('!') + ` Skipped ${totalSkipped} existing files (use --force to overwrite)`);
