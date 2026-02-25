@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.16] - 2026-02-25
+
+### Changed
+- **CLAUDE.md pointer files only written for Claude backend** — The `generate` and `update` commands now conditionally write `CLAUDE.md` pointer files only when the active backend is `claude`, preventing unnecessary artifact creation when using Codex, Gemini, or OpenCode backends
+- **`backendName` option added to `CommandRunOptions`** — New optional `backendName` field propagated from CLI commands to the orchestration runner, enabling backend-specific artifact gating
+
 ## [1.2.15] - 2026-02-25
 
 ### Added
@@ -1156,7 +1162,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary file detection and exclusion
 - Token budget management for AI-friendly output
 
-[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.15...HEAD
+[Unreleased]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.16...HEAD
+[1.2.16]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.15...v1.2.16
 [1.2.15]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.14...v1.2.15
 [1.2.14]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.13...v1.2.14
 [1.2.13]: https://github.com/GeoloeG-IsT/agents-reverse-engineer/compare/v1.2.12...v1.2.13
