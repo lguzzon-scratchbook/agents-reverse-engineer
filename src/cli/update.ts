@@ -384,7 +384,9 @@ export async function updateCommand(
           if (variant) {
             await writeAgentsMdHub(dirPath, variant);
           }
-          await writeClaudeMdPointer(dirPath);
+          if (backend.name === 'claude') {
+            await writeClaudeMdPointer(dirPath);
+          }
           const dirDurationMs = Date.now() - taskStart;
           dirReporter.onDirectoryDone(
             dir || '.',

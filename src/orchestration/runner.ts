@@ -460,7 +460,9 @@ export class CommandRunner {
           if (this.variant) {
             await writeAgentsMdHub(dirTask.absolutePath, this.variant);
           }
-          await writeClaudeMdPointer(dirTask.absolutePath);
+          if (this.options.backendName === 'claude') {
+            await writeClaudeMdPointer(dirTask.absolutePath);
+          }
           const dirDurationMs = Date.now() - dirCallStart;
           reporter.onDirectoryDone(
             dirTask.path,

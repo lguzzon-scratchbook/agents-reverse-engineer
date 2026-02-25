@@ -293,6 +293,7 @@ export async function generateCommand(
     tracer,
     progressLog,
     variant,
+    backendName: backend.name,
   });
 
   // Execute the two-phase pipeline

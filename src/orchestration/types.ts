@@ -157,4 +157,6 @@ export interface CommandRunOptions {
   progressLog?: ProgressLog;
   /** Eval variant name for side-by-side model comparison (e.g., "claude.haiku") */
   variant?: string;
+  /** Backend name (e.g., "claude", "codex", "gemini", "opencode") — used to gate backend-specific artifacts */
+  backendName?: string;
 }
