@@ -133,14 +133,8 @@
   </div>
   <div class="are-nav-side"></div>
 </nav>
-<style>
-.are-blur-wrap{filter:blur(5px);pointer-events:none;user-select:none}
-.are-coming-soon-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;background:rgba(10,10,20,0.93);backdrop-filter:blur(12px);color:#fff;padding:28px 48px;border-radius:14px;font-family:system-ui,-apple-system,sans-serif;text-align:center;pointer-events:auto;border:1px solid rgba(255,255,255,0.1);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
-.are-coming-soon-banner h2{font-size:24px;font-weight:700;margin-bottom:8px;color:#fff}
-.are-coming-soon-banner p{font-size:14px;color:rgba(255,255,255,0.75);margin:0}
-</style>
-<div class="are-coming-soon-banner"><h2>Coming Soon</h2><p>This article is not yet available</p></div>
-<div class="are-blur-wrap">
+
+
 <article><div class="masthead"><div class="paper-name">The Developer's Gazette</div></div><h1>Configuration Mastery: Tuning ARE for Your Project</h1>
 <p>Agents-reverse-engineer (ARE) works great out of the box with intelligent defaults, but tuning the configuration can dramatically improve results for your specific project. This guide covers every setting in <code>.agents-reverse-engineer/config.yaml</code> and provides practical recommendations.</p>
 <h2>The Config File</h2>
@@ -185,6 +179,6 @@
 <p><strong>Medium Projects (50-500 files):</strong> Exclude test files and fixtures, use concurrency fifteen, sonnet model, 0.25 compression.</p>
 <p><strong>Large Projects (500+ files):</strong> Be aggressive with exclusions, use max concurrency, consider haiku for cost efficiency, use 0.20 compression. Monitor for rate-limit errors and use <code>--trace</code> on first run.</p>
 </article>
-</div>
+
 </body>
 </html>
